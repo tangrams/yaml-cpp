@@ -110,8 +110,6 @@ if(VERBOSE)
 	message(STATUS "contrib_private_headers: ${contrib_private_headers}")
 endif()
 
-include_directories(${YAML_CPP_SOURCE_DIR}/src)
-include_directories(${YAML_CPP_SOURCE_DIR}/include)
 
 
 
@@ -280,6 +278,12 @@ set_target_properties(yaml-cpp PROPERTIES
 	VERSION "${YAML_CPP_VERSION}"
 	SOVERSION "${YAML_CPP_VERSION_MAJOR}.${YAML_CPP_VERSION_MINOR}"
 	PROJECT_LABEL "yaml-cpp ${LABEL_SUFFIX}"
+)
+target_include_directories(yaml-cpp
+  PRIVATE
+  ${YAML_CPP_SOURCE_DIR}/src
+  PUBLIC
+  ${YAML_CPP_SOURCE_DIR}/include
 )
 
 if(IPHONE)
