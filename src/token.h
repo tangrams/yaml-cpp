@@ -10,7 +10,7 @@ const std::string TokenNames[] = {
     "DIRECTIVE", "DOC_START", "DOC_END", "BLOCK_SEQ_START", "BLOCK_MAP_START",
     "BLOCK_SEQ_END", "BLOCK_MAP_END", "BLOCK_ENTRY", "FLOW_SEQ_START",
     "FLOW_MAP_START", "FLOW_SEQ_END", "FLOW_MAP_END", "FLOW_MAP_COMPACT",
-    "FLOW_ENTRY", "KEY", "VALUE", "ANCHOR", "ALIAS", "TAG", "SCALAR"};
+    "FLOW_ENTRY", "KEY", "VALUE", "ANCHOR", "ALIAS", "TAG", "SCALAR", "NON_PLAIN_SCALAR"};
 
 struct Token {
   // enums
