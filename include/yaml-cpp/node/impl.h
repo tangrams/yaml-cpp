@@ -66,6 +66,13 @@ inline bool Node::IsDefined() const {
   return m_pNode ? m_pNode->is_defined() : true;
 }
 
+inline Mark Node::Mark() const {
+  if (!m_isValid) {
+    throw InvalidNode();
+  }
+  return m_pNode ? m_pNode->mark() : Mark::null_mark();
+}
+
 inline NodeType::value Node::Type() const {
   if (!m_isValid)
     throw InvalidNode();
@@ -80,7 +87,7 @@ struct as_if {
   explicit as_if(const Node& node_) : node(node_) {}
   const Node& node;
 
-  const T operator()(const S& fallback) const {
+  T operator()(const S& fallback) const {
     if (!node.m_pNode)
       return fallback;
 
@@ -110,12 +117,12 @@ struct as_if<T, void> {
 
   const T operator()() const {
     if (!node.m_pNode)
-      throw TypedBadConversion<T>();
+      throw TypedBadConversion<T>(node.Mark());
 
     T t;
     if (convert<T>::decode(node, t))
       return t;
-    throw TypedBadConversion<T>();
+    throw TypedBadConversion<T>(node.Mark());
   }
 };
 
@@ -126,23 +133,23 @@ struct as_if<std::string, void> {
 
   const std::string operator()() const {
     if (node.Type() != NodeType::Scalar)
-      throw TypedBadConversion<std::string>();
+      throw TypedBadConversion<std::string>(node.Mark());
     return node.Scalar();
   }
 };
 
 // access functions
 template <typename T>
-inline const T Node::as() const {
+inline T Node::as() const {
   if (!m_isValid)
     throw InvalidNode();
   return as_if<T, void>(*this)();
 }
 
 template <typename T, typename S>
-inline const T Node::as(const S& fallback) const {
+inline T Node::as(const S& fallback) const {
   if (!m_isValid)
-    throw InvalidNode();
+    return fallback;
   return as_if<T, S>(*this)(fallback);
 }
 
@@ -275,26 +282,26 @@ inline std::size_t Node::size() const {
 
 inline const_iterator Node::begin() const {
   if (!m_isValid)
-    throw InvalidNode();
+    return const_iterator();
   return m_pNode ? const_iterator(m_pNode->begin(), m_pMemory)
                  : const_iterator();
 }
 
 inline iterator Node::begin() {
   if (!m_isValid)
-    throw InvalidNode();
+    return iterator();
   return m_pNode ? iterator(m_pNode->begin(), m_pMemory) : iterator();
 }
 
 inline const_iterator Node::end() const {
   if (!m_isValid)
-    throw InvalidNode();
+    return const_iterator();
   return m_pNode ? const_iterator(m_pNode->end(), m_pMemory) : const_iterator();
 }
 
 inline iterator Node::end() {
   if (!m_isValid)
-    throw InvalidNode();
+    return iterator();
   return m_pNode ? iterator(m_pNode->end(), m_pMemory) : iterator();
 }
 

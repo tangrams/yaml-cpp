@@ -9,7 +9,7 @@
 
 #include "yaml-cpp/node/detail/node.h"
 #include "yaml-cpp/node/detail/node_data.h"
-#include <boost/type_traits.hpp>
+#include <type_traits>
 
 namespace YAML {
 namespace detail {
@@ -22,9 +22,9 @@ struct get_idx {
 };
 
 template <typename Key>
-struct get_idx<
-    Key, typename boost::enable_if_c<boost::is_unsigned<Key>::value &&
-                                     !boost::is_same<Key, bool>::value>::type> {
+struct get_idx<Key,
+               typename std::enable_if<std::is_unsigned<Key>::value &&
+                                       !std::is_same<Key, bool>::value>::type> {
   static node* get(const std::vector<node*>& sequence, const Key& key,
                    shared_memory_holder /* pMemory */) {
     return key < sequence.size() ? sequence[key] : 0;
@@ -41,7 +41,7 @@ struct get_idx<
 };
 
 template <typename Key>
-struct get_idx<Key, typename boost::enable_if<boost::is_signed<Key> >::type> {
+struct get_idx<Key, typename std::enable_if<std::is_signed<Key>::value>::type> {
   static node* get(const std::vector<node*>& sequence, const Key& key,
                    shared_memory_holder pMemory) {
     return key >= 0 ? get_idx<std::size_t>::get(
@@ -133,7 +133,7 @@ inline bool node_data::remove(const Key& key, shared_memory_holder pMemory) {
     return false;
 
   for (node_map::iterator it = m_map.begin(); it != m_map.end(); ++it) {
-    if (equals(*it->first, key, pMemory)) {
+    if (it->first->equals(key, pMemory)) {
       m_map.erase(it);
       return true;
     }

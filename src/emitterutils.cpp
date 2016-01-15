@@ -375,14 +375,24 @@ bool WriteLiteralString(ostream_wrapper& out, const std::string& str,
 bool WriteChar(ostream_wrapper& out, char ch) {
   if (('a' <= ch && ch <= 'z') || ('A' <= ch && ch <= 'Z')) {
     out << ch;
+<<<<<<< HEAD
   } else if ((0x20 <= ch && ch <= 0x7e) || ch == ' ') {
     out << "\"" << ch << "\"";
+=======
+  } else if (ch == '\"') {
+    out << "\"\\\"\"";
+>>>>>>> upstream/master
   } else if (ch == '\t') {
     out << "\"\\t\"";
   } else if (ch == '\n') {
     out << "\"\\n\"";
   } else if (ch == '\b') {
     out << "\"\\b\"";
+<<<<<<< HEAD
+=======
+  } else if ((0x20 <= ch && ch <= 0x7e) || ch == ' ') {
+    out << "\"" << ch << "\"";
+>>>>>>> upstream/master
   } else {
     out << "\"";
     WriteDoubleQuoteEscapeSequence(out, ch);

@@ -39,6 +39,13 @@ TEST(NodeTest, SimpleAppendSequence) {
   EXPECT_TRUE(node.IsSequence());
 }
 
+TEST(NodeTest, MapElementRemoval) {
+  Node node;
+  node["foo"] = "bar";
+  node.remove("foo");
+  EXPECT_TRUE(!node["foo"]);
+}
+
 TEST(NodeTest, SimpleAssignSequence) {
   Node node;
   node[0] = 10;
@@ -73,6 +80,31 @@ TEST(NodeTest, MapWithUndefinedValues) {
   EXPECT_EQ(2, node.size());
 }
 
+TEST(NodeTest, MapForceInsert) {
+  Node node;
+  Node k1("k1");
+  Node k2("k2");
+  Node v1("v1");
+  Node v2("v2");
+  node[k1] = v1;
+  node[k2] = v1;
+  EXPECT_TRUE(node.IsMap());
+  EXPECT_EQ("v1", node["k1"].as<std::string>());
+  EXPECT_EQ("v1", node["k2"].as<std::string>());
+  EXPECT_EQ(2, node.size());
+
+  node.force_insert(k2, v2);
+  EXPECT_EQ("v1", node["k1"].as<std::string>());
+  EXPECT_EQ("v2", node["k2"].as<std::string>());
+  EXPECT_EQ(2, node.size());
+}
+
+TEST(NodeTest, UndefinedConstNodeWithFallback) {
+  Node node;
+  const Node& cn = node;
+  EXPECT_EQ(cn["undefined"].as<int>(3), 3);
+}
+
 TEST(NodeTest, MapIteratorWithUndefinedValues) {
   Node node;
   node["key"] = "value";
@@ -82,6 +114,32 @@ TEST(NodeTest, MapIteratorWithUndefinedValues) {
   for (const_iterator it = node.begin(); it != node.end(); ++it)
     count++;
   EXPECT_EQ(1, count);
+}
+
+TEST(NodeTest, ConstIteratorOnConstUndefinedNode) {
+  Node node;
+  const Node& cn = node;
+  const Node& undefinedCn = cn["undefined"];
+
+  std::size_t count = 0;
+  for (const_iterator it = undefinedCn.begin(); it != undefinedCn.end(); ++it) {
+    count++;
+ }
+  EXPECT_EQ(0, count);
+}
+
+TEST(NodeTest, IteratorOnConstUndefinedNode) {
+  Node node;
+  const Node& cn = node;
+  const Node& undefinedCn = cn["undefined"];
+
+  Node& nonConstUndefinedNode = const_cast<Node&>(undefinedCn);
+
+  std::size_t count = 0;
+  for (iterator it = nonConstUndefinedNode.begin(); it != nonConstUndefinedNode.end(); ++it) {
+    count++;
+  }
+  EXPECT_EQ(0, count);
 }
 
 TEST(NodeTest, SimpleSubkeys) {

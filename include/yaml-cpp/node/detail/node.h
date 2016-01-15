@@ -13,18 +13,20 @@
 #include "yaml-cpp/node/ptr.h"
 #include "yaml-cpp/node/detail/node_ref.h"
 #include <set>
-#include <boost/utility.hpp>
 
 namespace YAML {
 namespace detail {
-class node : private boost::noncopyable {
+class node {
  public:
   node() : m_pRef(new node_ref) {}
+  node(const node&) = delete;
+  node& operator=(const node&) = delete;
 
   bool is(const node& rhs) const { return m_pRef == rhs.m_pRef; }
   const node_ref* ref() const { return m_pRef.get(); }
 
   bool is_defined() const { return m_pRef->is_defined(); }
+  const Mark& mark() const { return m_pRef->mark(); }
   NodeType::value type() const { return m_pRef->type(); }
 
   const std::string& scalar() const { return m_pRef->scalar(); }
@@ -63,6 +65,8 @@ class node : private boost::noncopyable {
       mark_defined();
     m_pRef->set_data(*rhs.m_pRef);
   }
+
+  void set_mark(const Mark& mark) { m_pRef->set_mark(mark); }
 
   void set_type(NodeType::value type) {
     if (type != NodeType::Undefined)
