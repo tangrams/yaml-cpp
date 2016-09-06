@@ -27,6 +27,7 @@ list(APPEND test_sources ${test_new_api_sources})
 add_sources(${test_sources} ${test_headers})
 
 include_directories(${YAML_CPP_SOURCE_DIR}/test)
+include_directories(${YAML_CPP_SOURCE_DIR}/src)
 
 add_executable(run-tests
 	${test_sources}
