@@ -179,17 +179,6 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR
 	#
 	set(yaml_cxx_flags "-Wall ${GCC_EXTRA_OPTIONS} -pedantic -Wno-long-long -std=c++11 ${yaml_cxx_flags}")
 
-	### Make specific
-	if(${CMAKE_BUILD_TOOL} MATCHES make OR ${CMAKE_BUILD_TOOL} MATCHES gmake)
-		add_custom_target(debuggable $(MAKE) clean
-			COMMAND ${CMAKE_COMMAND} -DCMAKE_BUILD_TYPE=Debug ${CMAKE_SOURCE_DIR}
-			COMMENT "Adjusting settings for debug compilation"
-			VERBATIM)
-		add_custom_target(releasable $(MAKE) clean
-			COMMAND ${CMAKE_COMMAND} -DCMAKE_BUILD_TYPE=Release ${CMAKE_SOURCE_DIR}
-			COMMENT "Adjusting settings for release compilation"
-			VERBATIM)
-	endif()
 endif()
 
 # Microsoft VisualC++ specialities
