@@ -283,7 +283,8 @@ target_include_directories(yaml-cpp
   PRIVATE
   ${YAML_CPP_SOURCE_DIR}/src
   PUBLIC
-  ${YAML_CPP_SOURCE_DIR}/include
+  $<BUILD_INTERFACE:${YAML_CPP_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
 )
 
 if(IPHONE)
