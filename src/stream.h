@@ -34,7 +34,8 @@ class Stream : private noncopyable {
 
   char get();
   std::string get(int n);
-  void eat(int n = 1);
+  void eat(int n);
+  void eat();
 
   static constexpr char eof() { return 0x04; }
 

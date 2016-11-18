@@ -288,8 +288,7 @@ std::string Stream::get(int n) {
 // eat
 // . Eats 'n' characters and updates our position.
 void Stream::eat(int n) {
-// Caon one only know how much to eat
-
+// Can one only know how much to eat?
   for (int i = 0; i < n; i++) {
     // inline get();
     //char ch = peek();
@@ -302,6 +301,21 @@ void Stream::eat(int n) {
         m_mark.line++;
     }
   }
+}
+
+void Stream::eat() {
+    char ch = m_readahead[0];
+
+    //AdvanceCurrent();
+    m_readahead.pop_front();
+    m_mark.pos++;
+    ReadAheadTo(0);
+
+    m_mark.column++;
+    if (ch == '\n') {
+        m_mark.column = 0;
+        m_mark.line++;
+    }
 }
 
 void Stream::AdvanceCurrent() {
