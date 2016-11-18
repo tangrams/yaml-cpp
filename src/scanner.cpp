@@ -34,10 +34,10 @@ Token& Scanner::peek() {
                               // if it's empty before peeking.
 
 #if 0
-		static Token *pLast = 0;
-		if(pLast != &m_tokens.front())
-			std::cerr << "peek: " << m_tokens.front() << "\n";
-		pLast = &m_tokens.front();
+                static Token *pLast = 0;
+                if(pLast != &m_tokens.front())
+                        std::cerr << "peek: " << m_tokens.front() << "\n";
+                pLast = &m_tokens.front();
 #endif
 
   return m_tokens.front();
@@ -181,14 +181,14 @@ void Scanner::ScanToNextToken() {
       if (InBlockContext() && Exp::Tab::Matches(INPUT)) {
         m_simpleKeyAllowed = false;
       }
-      INPUT.eat(1);
+      INPUT.eat();
     }
 
     // then eat a comment
     if (Exp::Comment::Matches(INPUT)) {
       // eat until line break
       while (INPUT && !Exp::Break::Matches(INPUT)) {
-        INPUT.eat(1);
+        INPUT.eat();
       }
     }
 
