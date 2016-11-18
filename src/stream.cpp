@@ -3,7 +3,7 @@
 #include "stream.h"
 
 #ifndef YAML_PREFETCH_SIZE
-#define YAML_PREFETCH_SIZE 2048
+#define YAML_PREFETCH_SIZE 32768
 #endif
 
 #define S_ARRAY_SIZE(A) (sizeof(A) / sizeof(*(A)))
@@ -247,18 +247,18 @@ Stream::Stream(std::istream& input)
 
 Stream::~Stream() { delete[] m_pPrefetched; }
 
-char Stream::peek() const {
-  if (m_readahead.empty()) {
-    return Stream::eof();
-  }
+// char Stream::peek() const {
+//   if (m_readahead.empty()) {
+//     return Stream::eof();
+//   }
+//   return m_readahead[0];
+// }
 
-  return m_readahead[0];
-}
-
-Stream::operator bool() const {
-  return m_input.good() ||
-         (!m_readahead.empty() && m_readahead[0] != Stream::eof());
-}
+// Stream::operator bool() const {
+//   // return m_input.good() ||
+//   //        (!m_readahead.empty() && m_readahead[0] != Stream::eof());
+//   return (!m_readahead.empty() && m_readahead[0] != Stream::eof()) || m_input.good();
+// }
 
 // get
 // . Extracts a character from the stream and updates our position
@@ -288,8 +288,20 @@ std::string Stream::get(int n) {
 // eat
 // . Eats 'n' characters and updates our position.
 void Stream::eat(int n) {
-  for (int i = 0; i < n; i++)
-    get();
+// Caon one only know how much to eat
+
+  for (int i = 0; i < n; i++) {
+    // inline get();
+    //char ch = peek();
+    char ch = m_readahead[0];
+    AdvanceCurrent();
+    m_mark.column++;
+
+    if (ch == '\n') {
+        m_mark.column = 0;
+        m_mark.line++;
+    }
+  }
 }
 
 void Stream::AdvanceCurrent() {
@@ -302,7 +314,44 @@ void Stream::AdvanceCurrent() {
 }
 
 bool Stream::_ReadAheadTo(size_t i) const {
-  while (m_input.good() && (m_readahead.size() <= i)) {
+#if 1
+
+    if (m_charSet == utf8) {
+        while (m_nPrefetchedUsed < m_nPrefetchedAvailable) {
+            m_readahead.push_back(m_pPrefetched[m_nPrefetchedUsed++]);
+        }
+
+        if (m_readahead.size() <= i) {
+            while (m_readahead.size() <= i) {
+                unsigned char b = GetNextByte();
+                if (m_input.good()) {
+                    m_readahead.push_back(b);
+                } else {
+                    break;
+                }
+            }
+            if (!m_input.good())
+                m_readahead.push_back(Stream::eof());
+        }
+
+    } else if (m_charSet == utf16le || m_charSet == utf16be) {
+        while (m_input.good() && (m_readahead.size() <= i)) {
+            StreamInUtf16();
+        }
+        if (!m_input.good())
+            m_readahead.push_back(Stream::eof());
+    } else if (m_charSet == utf32le || m_charSet == utf32be) {
+        while (m_input.good() && (m_readahead.size() <= i)) {
+            StreamInUtf32();
+        }
+        if (!m_input.good())
+            m_readahead.push_back(Stream::eof());
+    }
+
+
+    return m_readahead.size() > i;
+#else
+    while (m_input.good() && (m_readahead.size() <= i)) {
     switch (m_charSet) {
       case utf8:
         StreamInUtf8();
@@ -327,6 +376,7 @@ bool Stream::_ReadAheadTo(size_t i) const {
     m_readahead.push_back(Stream::eof());
 
   return m_readahead.size() > i;
+#endif
 }
 
 void Stream::StreamInUtf8() const {
@@ -410,6 +460,7 @@ unsigned char Stream::GetNextByte() const {
     std::streambuf* pBuf = m_input.rdbuf();
     m_nPrefetchedAvailable = static_cast<std::size_t>(
         pBuf->sgetn(ReadBuffer(m_pPrefetched), YAML_PREFETCH_SIZE));
+
     m_nPrefetchedUsed = 0;
     if (!m_nPrefetchedAvailable) {
       m_input.setstate(std::ios_base::eofbit);

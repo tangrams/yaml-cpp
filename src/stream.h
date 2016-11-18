@@ -17,10 +17,21 @@ class Stream : private noncopyable {
   Stream(std::istream& input);
   ~Stream();
 
-  operator bool() const;
+  //operator bool() const;
+  operator bool() const {
+    return (!m_readahead.empty() && m_readahead[0] != Stream::eof()) || m_input.good();
+  }
+
   bool operator!() const { return !static_cast<bool>(*this); }
 
-  char peek() const;
+  //inline char peek() const;
+  char peek() const {
+    if (m_readahead.empty()) {
+        return Stream::eof();
+    }
+    return m_readahead[0];
+  }
+
   char get();
   std::string get(int n);
   void eat(int n = 1);
@@ -45,7 +56,7 @@ class Stream : private noncopyable {
   mutable size_t m_nPrefetchedAvailable;
   mutable size_t m_nPrefetchedUsed;
 
-  void AdvanceCurrent();
+  inline void AdvanceCurrent();
   char CharAt(size_t i) const;
   bool ReadAheadTo(size_t i) const;
   bool _ReadAheadTo(size_t i) const;
