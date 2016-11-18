@@ -10,7 +10,6 @@
 
 namespace YAML {
 namespace detail {
-struct iterator_value;
 
 template <typename V>
 class iterator_base {
@@ -37,7 +36,7 @@ class iterator_base {
   using reference = V;
 
  public:
-  iterator_base() : m_iterator(), m_pMemory() {}
+  iterator_base() : m_iterator(), m_pMemory(nullptr) {}
   explicit iterator_base(base_type rhs, shared_memory_holder pMemory)
       : m_iterator(rhs), m_pMemory(pMemory) {}
 
