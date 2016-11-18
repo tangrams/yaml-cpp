@@ -28,7 +28,7 @@ void Scanner::ScanDirective() {
 
   // store pos and eat indicator
   Token token(Token::DIRECTIVE, INPUT.mark());
-  INPUT.eat(1);
+  INPUT.eat();
 
   // read name
   while (INPUT && !Exp::BlankOrBreak::Matches(INPUT))
@@ -38,7 +38,7 @@ void Scanner::ScanDirective() {
   while (1) {
     // first get rid of whitespace
     while (Exp::Blank::Matches(INPUT))
-      INPUT.eat(1);
+      INPUT.eat();
 
     // break on newline or comment
     if (!INPUT || Exp::Break::Matches(INPUT) || Exp::Comment::Matches(INPUT))
@@ -143,7 +143,7 @@ void Scanner::ScanFlowEntry() {
 
   // eat
   Mark mark = INPUT.mark();
-  INPUT.eat(1);
+  INPUT.eat();
   m_tokens.push(Token(Token::FLOW_ENTRY, mark));
 }
 
@@ -163,7 +163,7 @@ void Scanner::ScanBlockEntry() {
 
   // eat
   Mark mark = INPUT.mark();
-  INPUT.eat(1);
+  INPUT.eat();
   m_tokens.push(Token(Token::BLOCK_ENTRY, mark));
 }
 
@@ -182,7 +182,7 @@ void Scanner::ScanKey() {
 
   // eat
   Mark mark = INPUT.mark();
-  INPUT.eat(1);
+  INPUT.eat();
   m_tokens.push(Token(Token::KEY, mark));
 }
 
@@ -211,7 +211,7 @@ void Scanner::ScanValue() {
 
   // eat
   Mark mark = INPUT.mark();
-  INPUT.eat(1);
+  INPUT.eat();
   m_tokens.push(Token(Token::VALUE, mark));
 }
 
@@ -415,12 +415,12 @@ void Scanner::ScanBlockScalar() {
 
   // now eat whitespace
   while (Exp::Blank::Matches(INPUT))
-    INPUT.eat(1);
+    INPUT.eat();
 
   // and comments to the end of the line
   if (Exp::Comment::Matches(INPUT))
     while (INPUT && !Exp::Break::Matches(INPUT))
-      INPUT.eat(1);
+      INPUT.eat();
 
   // if it's not a line break, then we ran into a bad character inline
   if (INPUT && !Exp::Break::Matches(INPUT))

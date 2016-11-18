@@ -198,7 +198,7 @@ std::string ScanScalar::Apply(Stream& INPUT, ScanScalarParams& params) {
            (INPUT.column() < params.indent ||
             (params.detectIndent && !foundNonEmptyLine)) &&
            !(params.end(INPUT) >= 0)) {
-      INPUT.eat(1);
+      INPUT.eat();
     }
 
     // update indent if we're auto-detecting
@@ -222,7 +222,7 @@ std::string ScanScalar::Apply(Stream& INPUT, ScanScalarParams& params) {
         break;
       }
 
-      INPUT.eat(1);
+      INPUT.eat();
     }
 
     // was this an empty line?
