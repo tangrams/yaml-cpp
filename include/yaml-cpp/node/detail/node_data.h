@@ -20,7 +20,7 @@ class node;
 
 namespace YAML {
 namespace detail {
-class YAML_CPP_API node_data {
+class YAML_CPP_API node_data : public ref_counted {
  public:
   node_data();
   node_data(const node_data&) = delete;
@@ -114,6 +114,7 @@ class YAML_CPP_API node_data {
   typedef std::pair<node*, node*> kv_pair;
   typedef std::list<kv_pair> kv_pairs;
   mutable kv_pairs m_undefinedPairs;
+
 };
 }
 }
