@@ -3,12 +3,12 @@
 #include <cstddef>
 #include <ios>
 #include <map>
+#include <memory>
 #include <queue>
 #include <set>
 #include <stack>
 #include <string>
 
-#include "ptr_vector.h"
 #include "stream.h"
 #include "token.h"
 #include "yaml-cpp/mark.h"
@@ -171,7 +171,7 @@ class Scanner {
   bool m_canBeJSONFlow;
   std::stack<SimpleKey> m_simpleKeys;
   std::stack<IndentMarker *> m_indents;
-  ptr_vector<IndentMarker> m_indentRefs;  // for "garbage collection"
+  std::vector<std::unique_ptr<IndentMarker>> m_indentRefs;  // for "garbage collection"
   std::stack<FLOW_MARKER> m_flows;
 };
 }
