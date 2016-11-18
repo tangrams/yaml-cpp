@@ -249,7 +249,7 @@ void Scanner::StartStream() {
   std::unique_ptr<IndentMarker> pIndent(
       new IndentMarker(-1, IndentMarker::NONE));
   m_indentRefs.push_back(std::move(pIndent));
-  m_indents.push(&m_indentRefs.back());
+  m_indents.push(m_indentRefs.back().get());
 }
 
 void Scanner::EndStream() {
@@ -311,7 +311,7 @@ Scanner::IndentMarker* Scanner::PushIndentTo(int column,
   // and then the indent
   m_indents.push(&indent);
   m_indentRefs.push_back(std::move(pIndent));
-  return &m_indentRefs.back();
+  return m_indentRefs.back().get();
 }
 
 void Scanner::PopIndentToHere() {
