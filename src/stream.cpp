@@ -3,7 +3,7 @@
 #include "stream.h"
 
 #ifndef YAML_PREFETCH_SIZE
-#define YAML_PREFETCH_SIZE 32768
+#define YAML_PREFETCH_SIZE 8192
 #endif
 
 #define S_ARRAY_SIZE(A) (sizeof(A) / sizeof(*(A)))
@@ -327,6 +327,20 @@ void Stream::AdvanceCurrent() {
   ReadAheadTo(0);
 }
 
+void Stream::SkipWhiteSpace() {
+    size_t count = 0;
+    for (char c : m_readahead) {
+        if (c != ' ') { break; }
+        count++;
+    }
+    if (count > 0) {
+        m_readahead.erase(m_readahead.begin(), m_readahead.begin() + count);
+        m_mark.pos += count;
+        m_mark.column += count;
+        ReadAheadTo(0);
+    }
+}
+
 bool Stream::_ReadAheadTo(size_t i) const {
 #if 1
 
@@ -472,8 +486,8 @@ inline char* ReadBuffer(unsigned char* pBuffer) {
 unsigned char Stream::GetNextByte() const {
   if (m_nPrefetchedUsed >= m_nPrefetchedAvailable) {
     std::streambuf* pBuf = m_input.rdbuf();
-    m_nPrefetchedAvailable = static_cast<std::size_t>(
-        pBuf->sgetn(ReadBuffer(m_pPrefetched), YAML_PREFETCH_SIZE));
+
+    m_nPrefetchedAvailable = static_cast<std::size_t>(pBuf->sgetn(ReadBuffer(m_pPrefetched), YAML_PREFETCH_SIZE));
 
     m_nPrefetchedUsed = 0;
     if (!m_nPrefetchedAvailable) {
