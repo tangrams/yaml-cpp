@@ -36,10 +36,10 @@ class YAML_CPP_API node_data : public ref_counted {
   void set_scalar(std::string&& scalar);
   void set_style(EmitterStyle::value style);
 
-  bool is_defined() const { return m_isDefined; }
+  bool is_defined() const { return m_type != NodeType::Undefined; }
   const Mark& mark() const { return m_mark; }
   NodeType::value type() const {
-    return m_isDefined ? m_type : NodeType::Undefined;
+    return m_type;
   }
   const std::string& scalar() const { return m_scalar; }
   const std::string& tag() const { return m_tag; }
@@ -92,11 +92,7 @@ class YAML_CPP_API node_data : public ref_counted {
   static node& convert_to_node(const T& rhs, shared_memory pMemory);
 
  private:
-  bool m_isDefined;
-  Mark m_mark;
   NodeType::value m_type;
-  std::string m_tag;
-  EmitterStyle::value m_style;
 
   // scalar
   std::string m_scalar;
@@ -110,6 +106,10 @@ class YAML_CPP_API node_data : public ref_counted {
   // map
   typedef std::vector<std::pair<node*, node*>> node_map;
   node_map m_map;
+
+  Mark m_mark;
+  std::string m_tag;
+  EmitterStyle::value m_style;
 
   typedef std::pair<node*, node*> kv_pair;
   typedef std::list<kv_pair> kv_pairs;
