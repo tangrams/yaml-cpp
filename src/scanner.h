@@ -4,7 +4,7 @@
 #include <ios>
 #include <map>
 #include <memory>
-#include <queue>
+#include <deque>
 #include <set>
 #include <stack>
 #include <string>
@@ -163,7 +163,7 @@ class Scanner {
   Stream INPUT;
 
   // the output (tokens)
-  std::queue<Token> m_tokens;
+  std::deque<Token> m_tokens;
 
   // state info
   bool m_startedStream, m_endedStream;
