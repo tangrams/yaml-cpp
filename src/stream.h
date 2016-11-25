@@ -44,7 +44,7 @@ class Stream : private noncopyable {
   int line() const { return m_mark.line; }
   int column() const { return m_mark.column; }
   void ResetColumn() { m_mark.column = 0; }
-
+  void SkipWhiteSpace();
  private:
   enum CharacterSet { utf8, utf16le, utf16be, utf32le, utf32be };
 

@@ -176,6 +176,8 @@ void Scanner::ScanNextToken() {
 
 void Scanner::ScanToNextToken() {
   while (1) {
+    INPUT.SkipWhiteSpace();
+
     // first eat whitespace
     while (INPUT && IsWhitespaceToBeEaten(INPUT.peek())) {
       if (InBlockContext() && Exp::Tab::Matches(INPUT)) {
@@ -193,12 +195,10 @@ void Scanner::ScanToNextToken() {
     }
 
     // if it's NOT a line break, then we're done!
-    if (!Exp::Break::Matches(INPUT)) {
-      break;
-    }
+    int n = Exp::Break::Match(INPUT);
+    if (n < 0) { break; }
 
     // otherwise, let's eat the line break and keep going
-    int n = Exp::Break::Match(INPUT);
     INPUT.eat(n);
 
     // oh yeah, and let's get rid of that simple key
