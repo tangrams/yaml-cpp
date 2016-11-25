@@ -24,7 +24,7 @@ bool Scanner::empty() {
 void Scanner::pop() {
   EnsureTokensInQueue();
   if (!m_tokens.empty())
-    m_tokens.pop();
+    m_tokens.pop_front();
 }
 
 Token& Scanner::peek() {
@@ -57,7 +57,7 @@ void Scanner::EnsureTokensInQueue() {
 
       // here's where we clean up the impossible tokens
       if (token.status == Token::INVALID) {
-        m_tokens.pop();
+        m_tokens.pop_front();
         continue;
       }
 
@@ -266,7 +266,7 @@ void Scanner::EndStream() {
 }
 
 Token* Scanner::PushToken(Token::TYPE type) {
-  m_tokens.push(Token(type, INPUT.mark()));
+  m_tokens.emplace_back(type, INPUT.mark());
   return &m_tokens.back();
 }
 
@@ -368,9 +368,9 @@ void Scanner::PopIndent() {
   }
 
   if (indent.type == IndentMarker::SEQ) {
-    m_tokens.push(Token(Token::BLOCK_SEQ_END, INPUT.mark()));
+    m_tokens.emplace_back(Token::BLOCK_SEQ_END, INPUT.mark());
   } else if (indent.type == IndentMarker::MAP) {
-    m_tokens.push(Token(Token::BLOCK_MAP_END, INPUT.mark()));
+    m_tokens.emplace_back(Token::BLOCK_MAP_END, INPUT.mark());
   }
 }
 
