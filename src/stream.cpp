@@ -345,8 +345,11 @@ bool Stream::_ReadAheadTo(size_t i) const {
 #if 1
 
     if (m_charSet == utf8) {
-        while (m_nPrefetchedUsed < m_nPrefetchedAvailable) {
-            m_readahead.push_back(m_pPrefetched[m_nPrefetchedUsed++]);
+        if (m_nPrefetchedUsed < m_nPrefetchedAvailable) {
+            m_readahead.insert(m_readahead.end(),
+                               m_pPrefetched + m_nPrefetchedUsed,
+                               m_pPrefetched + m_nPrefetchedAvailable);
+            m_nPrefetchedUsed = m_nPrefetchedAvailable;
         }
 
         if (m_readahead.size() <= i) {
