@@ -10,8 +10,13 @@
 
 namespace YAML {
 Node Load(const std::string& input) {
-  std::stringstream stream(input);
-  return Load(stream);
+  Parser parser(input);
+  NodeBuilder builder;
+  if (!parser.HandleNextDocument(builder)) {
+    return Node();
+  }
+
+  return builder.Root();
 }
 
 Node Load(const char* input) {

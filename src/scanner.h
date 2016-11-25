@@ -23,6 +23,7 @@ class RegEx;
 class Scanner {
  public:
   explicit Scanner(std::istream &in);
+  explicit Scanner(const std::string &in);
   ~Scanner();
 
   /** Returns true if there are no more tokens to be read. */
