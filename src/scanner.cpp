@@ -97,31 +97,34 @@ void Scanner::ScanNextToken() {
   if (!INPUT) {
     return EndStream();
   }
+  char c = INPUT.peek();
 
-  if (INPUT.column() == 0 && INPUT.peek() == Keys::Directive) {
-    return ScanDirective();
+  if (INPUT.column() == 0) {
+    if (c == Keys::Directive) {
+      return ScanDirective();
+    }
+
+    // document token
+    if (Exp::DocStart::Matches(INPUT)) {
+        return ScanDocStart();
+    }
+
+    if (Exp::DocEnd::Matches(INPUT)) {
+        return ScanDocEnd();
+    }
   }
-
-  // document token
-  if (INPUT.column() == 0 && Exp::DocStart::Matches(INPUT)) {
-    return ScanDocStart();
-  }
-
-  if (INPUT.column() == 0 && Exp::DocEnd::Matches(INPUT)) {
-    return ScanDocEnd();
-  }
-
   // flow start/end/entry
-  if (INPUT.peek() == Keys::FlowSeqStart ||
-      INPUT.peek() == Keys::FlowMapStart) {
+  if (c == Keys::FlowSeqStart ||
+      c == Keys::FlowMapStart) {
     return ScanFlowStart();
   }
 
-  if (INPUT.peek() == Keys::FlowSeqEnd || INPUT.peek() == Keys::FlowMapEnd) {
+  if (c == Keys::FlowSeqEnd ||
+      c == Keys::FlowMapEnd) {
     return ScanFlowEnd();
   }
 
-  if (INPUT.peek() == Keys::FlowEntry) {
+  if (c == Keys::FlowEntry) {
     return ScanFlowEntry();
   }
 
@@ -130,7 +133,10 @@ void Scanner::ScanNextToken() {
     return ScanBlockEntry();
   }
 
-  if (InBlockContext() ? Exp::Key::Matches(INPUT) : Exp::KeyInFlow::Matches(INPUT)) {
+  if (InBlockContext() ?
+      // TODO these are the same?
+      Exp::Key::Matches(INPUT) :
+      Exp::KeyInFlow::Matches(INPUT)) {
     return ScanKey();
   }
 
@@ -142,22 +148,23 @@ void Scanner::ScanNextToken() {
   }
 
   // alias/anchor
-  if (INPUT.peek() == Keys::Alias || INPUT.peek() == Keys::Anchor) {
+  if (c == Keys::Alias ||
+      c == Keys::Anchor) {
     return ScanAnchorOrAlias();
   }
 
   // tag
-  if (INPUT.peek() == Keys::Tag) {
+  if (c == Keys::Tag) {
     return ScanTag();
   }
 
   // special scalars
-  if (InBlockContext() && (INPUT.peek() == Keys::LiteralScalar ||
-                           INPUT.peek() == Keys::FoldedScalar)) {
+  if (InBlockContext() && (c == Keys::LiteralScalar ||
+                           c == Keys::FoldedScalar)) {
     return ScanBlockScalar();
   }
 
-  if (INPUT.peek() == '\'' || INPUT.peek() == '\"') {
+  if (c == '\'' || c == '\"') {
     return ScanQuotedScalar();
   }
 
