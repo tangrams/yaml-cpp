@@ -14,6 +14,13 @@ Scanner::Scanner(std::istream& in)
       m_simpleKeyAllowed(false),
       m_canBeJSONFlow(false) {}
 
+Scanner::Scanner(const std::string& in)
+    : INPUT(in),
+      m_startedStream(false),
+      m_endedStream(false),
+      m_simpleKeyAllowed(false),
+      m_canBeJSONFlow(false) {}
+
 Scanner::~Scanner() {}
 
 bool Scanner::empty() {
