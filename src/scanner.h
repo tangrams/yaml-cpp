@@ -31,9 +31,11 @@ class Scanner {
 
   /** Removes the next token in the queue. */
   void pop();
+  void pop_unsafe() {  m_tokens.pop_front(); }
 
   /** Returns, but does not remove, the next token in the queue. */
   Token &peek();
+  Token &peek_unsafe() { return m_tokens.front(); }
 
   /** Returns the current mark in the input stream. */
   Mark mark() const;
