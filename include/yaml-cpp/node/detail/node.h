@@ -21,6 +21,7 @@ class node {
   // required for bucket reserve
   node(node&&) = default;
   node& operator=(const node&) = delete;
+  node& operator=(node&&) = default;
 
   bool is(const node& rhs) const { return m_pRef == rhs.m_pRef; }
   const node_data* ref() const { return m_pRef.get(); }
