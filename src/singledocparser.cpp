@@ -29,10 +29,11 @@ void SingleDocParser::HandleDocument(EventHandler& eventHandler) {
   assert(!m_scanner.empty());  // guaranteed that there are tokens
   assert(!m_curAnchor);
 
-  eventHandler.OnDocumentStart(m_scanner.peek().mark);
+  Token& token = m_scanner.peek_unsafe();
+  eventHandler.OnDocumentStart(token.mark);
 
   // eat doc start
-  if (m_scanner.peek().type == Token::DOC_START)
+  if (token.type == Token::DOC_START)
     m_scanner.pop();
 
   // recurse!
@@ -41,8 +42,8 @@ void SingleDocParser::HandleDocument(EventHandler& eventHandler) {
   eventHandler.OnDocumentEnd();
 
   // and finally eat any doc ends we see
-  while (!m_scanner.empty() && m_scanner.peek().type == Token::DOC_END)
-    m_scanner.pop();
+  while (!m_scanner.empty() && m_scanner.peek_unsafe().type == Token::DOC_END)
+    m_scanner.pop_unsafe();
 }
 
 void SingleDocParser::HandleNode(EventHandler& eventHandler) {
@@ -66,7 +67,7 @@ void SingleDocParser::HandleNode(EventHandler& eventHandler) {
   // special case: an alias node
   if (m_scanner.peek().type == Token::ALIAS) {
     eventHandler.OnAlias(mark, LookupAnchor(mark, m_scanner.peek().value));
-    m_scanner.pop();
+    m_scanner.pop_unsafe();
     return;
   }
 
@@ -78,7 +79,7 @@ void SingleDocParser::HandleNode(EventHandler& eventHandler) {
 
   if (token.type == Token::PLAIN_SCALAR && IsNullString(token.value)) {
     eventHandler.OnNull(mark, anchor);
-    m_scanner.pop();
+    m_scanner.pop_unsafe();
     return;
   }
 
@@ -91,7 +92,7 @@ void SingleDocParser::HandleNode(EventHandler& eventHandler) {
     case Token::PLAIN_SCALAR:
     case Token::NON_PLAIN_SCALAR:
       eventHandler.OnScalar(mark, tag, anchor, token.value);
-      m_scanner.pop();
+      m_scanner.pop_unsafe();
       return;
     case Token::FLOW_SEQ_START:
       eventHandler.OnSequenceStart(mark, tag, anchor, EmitterStyle::Flow);
@@ -160,13 +161,13 @@ void SingleDocParser::HandleBlockSequence(EventHandler& eventHandler) {
     if (token.type != Token::BLOCK_ENTRY && token.type != Token::BLOCK_SEQ_END)
       throw ParserException(token.mark, ErrorMsg::END_OF_SEQ);
 
-    m_scanner.pop();
+    m_scanner.pop_unsafe();
     if (token.type == Token::BLOCK_SEQ_END)
       break;
 
     // check for null
     if (!m_scanner.empty()) {
-      const Token& token = m_scanner.peek();
+      const Token& token = m_scanner.peek_unsafe();
       if (token.type == Token::BLOCK_ENTRY ||
           token.type == Token::BLOCK_SEQ_END) {
         eventHandler.OnNull(token.mark, NullAnchor);
@@ -190,8 +191,8 @@ void SingleDocParser::HandleFlowSequence(EventHandler& eventHandler) {
       throw ParserException(m_scanner.mark(), ErrorMsg::END_OF_SEQ_FLOW);
 
     // first check for end
-    if (m_scanner.peek().type == Token::FLOW_SEQ_END) {
-      m_scanner.pop();
+    if (m_scanner.peek_unsafe().type == Token::FLOW_SEQ_END) {
+      m_scanner.pop_unsafe();
       break;
     }
 
@@ -203,9 +204,9 @@ void SingleDocParser::HandleFlowSequence(EventHandler& eventHandler) {
 
     // now eat the separator (or could be a sequence end, which we ignore - but
     // if it's neither, then it's a bad node)
-    Token& token = m_scanner.peek();
+    Token& token = m_scanner.peek_unsafe();
     if (token.type == Token::FLOW_ENTRY)
-      m_scanner.pop();
+      m_scanner.pop_unsafe();
     else if (token.type != Token::FLOW_SEQ_END)
       throw ParserException(token.mark, ErrorMsg::END_OF_SEQ_FLOW);
   }
@@ -242,27 +243,27 @@ void SingleDocParser::HandleBlockMap(EventHandler& eventHandler) {
     if (m_scanner.empty())
       throw ParserException(m_scanner.mark(), ErrorMsg::END_OF_MAP);
 
-    Token token = m_scanner.peek();
+    Token token = m_scanner.peek_unsafe();
     if (token.type != Token::KEY && token.type != Token::VALUE &&
         token.type != Token::BLOCK_MAP_END)
       throw ParserException(token.mark, ErrorMsg::END_OF_MAP);
 
     if (token.type == Token::BLOCK_MAP_END) {
-      m_scanner.pop();
+      m_scanner.pop_unsafe();
       break;
     }
 
     // grab key (if non-null)
     if (token.type == Token::KEY) {
-      m_scanner.pop();
+      m_scanner.pop_unsafe();
       HandleNode(eventHandler);
     } else {
       eventHandler.OnNull(token.mark, NullAnchor);
     }
 
     // now grab value (optional)
-    if (!m_scanner.empty() && m_scanner.peek().type == Token::VALUE) {
-      m_scanner.pop();
+    if (!m_scanner.empty() && m_scanner.peek_unsafe().type == Token::VALUE) {
+      m_scanner.pop_unsafe();
       HandleNode(eventHandler);
     } else {
       eventHandler.OnNull(token.mark, NullAnchor);
@@ -281,25 +282,25 @@ void SingleDocParser::HandleFlowMap(EventHandler& eventHandler) {
     if (m_scanner.empty())
       throw ParserException(m_scanner.mark(), ErrorMsg::END_OF_MAP_FLOW);
 
-    Token& token = m_scanner.peek();
+    Token& token = m_scanner.peek_unsafe();
     const Mark mark = token.mark;
     // first check for end
     if (token.type == Token::FLOW_MAP_END) {
-      m_scanner.pop();
+      m_scanner.pop_unsafe();
       break;
     }
 
     // grab key (if non-null)
     if (token.type == Token::KEY) {
-      m_scanner.pop();
+      m_scanner.pop_unsafe();
       HandleNode(eventHandler);
     } else {
       eventHandler.OnNull(mark, NullAnchor);
     }
 
     // now grab value (optional)
-    if (!m_scanner.empty() && m_scanner.peek().type == Token::VALUE) {
-      m_scanner.pop();
+    if (!m_scanner.empty() && m_scanner.peek_unsafe().type == Token::VALUE) {
+      m_scanner.pop_unsafe();
       HandleNode(eventHandler);
     } else {
       eventHandler.OnNull(mark, NullAnchor);
@@ -310,9 +311,9 @@ void SingleDocParser::HandleFlowMap(EventHandler& eventHandler) {
 
     // now eat the separator (or could be a map end, which we ignore - but if
     // it's neither, then it's a bad node)
-    Token& nextToken = m_scanner.peek();
+    Token& nextToken = m_scanner.peek_unsafe();
     if (nextToken.type == Token::FLOW_ENTRY)
-      m_scanner.pop();
+      m_scanner.pop_unsafe();
     else if (nextToken.type != Token::FLOW_MAP_END)
       throw ParserException(nextToken.mark, ErrorMsg::END_OF_MAP_FLOW);
   }
@@ -326,12 +327,12 @@ void SingleDocParser::HandleCompactMap(EventHandler& eventHandler) {
 
   // grab key
   Mark mark = m_scanner.peek().mark;
-  m_scanner.pop();
+  m_scanner.pop_unsafe();
   HandleNode(eventHandler);
 
   // now grab value (optional)
-  if (!m_scanner.empty() && m_scanner.peek().type == Token::VALUE) {
-    m_scanner.pop();
+  if (!m_scanner.empty() && m_scanner.peek_unsafe().type == Token::VALUE) {
+    m_scanner.pop_unsafe();
     HandleNode(eventHandler);
   } else {
     eventHandler.OnNull(mark, NullAnchor);
@@ -348,7 +349,7 @@ void SingleDocParser::HandleCompactMapWithNoKey(EventHandler& eventHandler) {
   eventHandler.OnNull(m_scanner.peek().mark, NullAnchor);
 
   // grab value
-  m_scanner.pop();
+  m_scanner.pop_unsafe();
   HandleNode(eventHandler);
 
   m_pCollectionStack->PopCollectionType(CollectionType::CompactMap);
@@ -364,7 +365,7 @@ void SingleDocParser::ParseProperties(std::string& tag, anchor_t& anchor) {
     if (m_scanner.empty())
       return;
 
-    switch (m_scanner.peek().type) {
+    switch (m_scanner.peek_unsafe().type) {
       case Token::TAG:
         ParseTag(tag);
         break;
@@ -384,7 +385,7 @@ void SingleDocParser::ParseTag(std::string& tag) {
 
   Tag tagInfo(token);
   tag = tagInfo.Translate(m_directives);
-  m_scanner.pop();
+  m_scanner.pop_unsafe();
 }
 
 void SingleDocParser::ParseAnchor(anchor_t& anchor) {
@@ -393,7 +394,7 @@ void SingleDocParser::ParseAnchor(anchor_t& anchor) {
     throw ParserException(token.mark, ErrorMsg::MULTIPLE_ANCHORS);
 
   anchor = RegisterAnchor(token.value);
-  m_scanner.pop();
+  m_scanner.pop_unsafe();
 }
 
 anchor_t SingleDocParser::RegisterAnchor(const std::string& name) {
