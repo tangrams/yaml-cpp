@@ -9,6 +9,7 @@
 #include <stack>
 #include <string>
 
+#include "scanscalar.h"
 #include "stream.h"
 #include "token.h"
 #include "yaml-cpp/mark.h"
@@ -161,6 +162,16 @@ class Scanner {
   void ScanQuotedScalar();
   void ScanBlockScalar();
 
+  // scanscalar.cpp
+  std::string ScanScalar(ScanScalarParams& info);
+  static int MatchScalarEmpty(const Stream& in);
+  static int MatchScalarSingleQuoted(const Stream& in);
+  static int MatchScalarDoubleQuoted(const Stream& in);
+  static int MatchScalarEnd(const Stream& in);
+  static int MatchScalarEndInFlow(const Stream& in);
+  static bool MatchDocIndicator(const Stream& in);
+  static bool CheckDocIndicator(Stream& INPUT, ScanScalarParams& params);
+
  private:
   // the stream
   Stream INPUT;
@@ -176,5 +187,7 @@ class Scanner {
   std::stack<IndentMarker *> m_indents;
   std::vector<std::unique_ptr<IndentMarker>> m_indentRefs;  // for "garbage collection"
   std::stack<FLOW_MARKER> m_flows;
+
+  std::string m_scalarBuffer;
 };
 }

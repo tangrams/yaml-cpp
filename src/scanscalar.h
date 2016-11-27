@@ -48,23 +48,4 @@ struct ScanScalarParams {
   bool leadingSpaces;
 };
 
-struct ScanScalar {
-    static int MatchScalarEmpty(const Stream& in);
-
-    static int MatchScalarSingleQuoted(const Stream& in);
-
-    static int MatchScalarDoubleQuoted(const Stream& in);
-
-    static int MatchScalarEnd(const Stream& in);
-
-    static int MatchScalarEndInFlow(const Stream& in);
-
-    static std::string Apply(Stream& INPUT, ScanScalarParams& info);
-
-private:
-    static bool MatchDocIndicator(const Stream& in);
-    static bool CheckDocIndicator(Stream& INPUT, ScanScalarParams& params);
-
-};
-
 }
