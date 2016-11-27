@@ -287,9 +287,9 @@ void Scanner::ScanPlainScalar() {
   // set up the scanning parameters
   ScanScalarParams params;
   if (InFlowContext()) {
-      params.end = ScanScalar::MatchScalarEndInFlow;
+      params.end = MatchScalarEndInFlow;
   } else {
-      params.end = ScanScalar::MatchScalarEnd;
+      params.end = MatchScalarEnd;
   }
 
   params.eatEnd = false;
@@ -306,7 +306,7 @@ void Scanner::ScanPlainScalar() {
 
   Mark mark = INPUT.mark();
 
-  m_tokens.emplace_back(Token::PLAIN_SCALAR, mark, ScanScalar::Apply(INPUT, params));
+  m_tokens.emplace_back(Token::PLAIN_SCALAR, mark, ScanScalar(params));
 
   // can have a simple key only if we ended the scalar by starting a new line
   m_simpleKeyAllowed = params.leadingSpaces;
@@ -329,9 +329,9 @@ void Scanner::ScanQuotedScalar() {
   // setup the scanning parameters
   ScanScalarParams params;
   if (single) {
-      params.end = ScanScalar::MatchScalarSingleQuoted;
+      params.end = MatchScalarSingleQuoted;
   } else {
-      params.end = ScanScalar::MatchScalarDoubleQuoted;
+      params.end = MatchScalarDoubleQuoted;
   }
   params.eatEnd = true;
   params.escape = (single ? '\'' : '\\');
@@ -351,7 +351,7 @@ void Scanner::ScanQuotedScalar() {
   INPUT.eat();
 
   // and scan
-  m_tokens.emplace_back(Token::NON_PLAIN_SCALAR, mark, ScanScalar::Apply(INPUT, params));
+  m_tokens.emplace_back(Token::NON_PLAIN_SCALAR, mark, ScanScalar(params));
 
   m_simpleKeyAllowed = false;
   m_canBeJSONFlow = true;
@@ -370,7 +370,7 @@ void Scanner::ScanBlockScalar() {
   params.indent = 1;
   params.detectIndent = true;
 
-  params.end = ScanScalar::MatchScalarEmpty;
+  params.end = MatchScalarEmpty;
 
   // eat block indicator ('|' or '>')
   Mark mark = INPUT.mark();
@@ -416,7 +416,7 @@ void Scanner::ScanBlockScalar() {
   params.trimTrailingSpaces = false;
   params.onTabInIndentation = THROW;
 
-  m_tokens.emplace_back(Token::NON_PLAIN_SCALAR, mark, ScanScalar::Apply(INPUT, params));
+  m_tokens.emplace_back(Token::NON_PLAIN_SCALAR, mark, ScanScalar(params));
 
   // simple keys always ok after block scalars (since we're gonna start a new
   // line anyways)

@@ -1,4 +1,4 @@
-#include "scanscalar.h"
+#include "scanner.h"
 
 #include <algorithm>
 
@@ -8,23 +8,23 @@
 
 namespace YAML {
 
-int ScanScalar::MatchScalarEmpty(const Stream&) {
+int Scanner::MatchScalarEmpty(const Stream&) {
   // This is checked by !INPUT as well
   return -1;
 }
 
-int ScanScalar::MatchScalarSingleQuoted(const Stream& in) {
+int Scanner::MatchScalarSingleQuoted(const Stream& in) {
   using namespace Exp;
   return (Matcher<Char<'\''>>::Matches(in) &&
           !EscSingleQuote::Matches(in)) ? 1 : -1;
 }
 
-int ScanScalar::MatchScalarDoubleQuoted(const Stream& in) {
+int Scanner::MatchScalarDoubleQuoted(const Stream& in) {
   using namespace Exp;
   return Matcher<Char<'\"'>>::Match(in);
 }
 
-int ScanScalar::MatchScalarEnd(const Stream& in) {
+int Scanner::MatchScalarEnd(const Stream& in) {
   using namespace Exp;
   using ScalarEnd = Matcher<
       OR < SEQ < Char<':'>,
@@ -36,7 +36,7 @@ int ScanScalar::MatchScalarEnd(const Stream& in) {
   return ScalarEnd::Match(in);
 }
 
-int ScanScalar::MatchScalarEndInFlow(const Stream& in) {
+int Scanner::MatchScalarEndInFlow(const Stream& in) {
   using namespace Exp;
   using ScalarEndInFlow = Matcher <
       OR < SEQ < Char<':'>,
@@ -57,14 +57,14 @@ int ScanScalar::MatchScalarEndInFlow(const Stream& in) {
   return ScalarEndInFlow::Match(in);
 }
 
-bool ScanScalar::MatchDocIndicator(const Stream& in) {
+bool Scanner::MatchDocIndicator(const Stream& in) {
  using namespace Exp;
  using DocIndicator = Matcher<OR <detail::DocStart, detail::DocEnd>>;
 
  return DocIndicator::Matches(in);
 }
 
-bool ScanScalar::CheckDocIndicator(Stream& INPUT, ScanScalarParams& params) {
+bool Scanner::CheckDocIndicator(Stream& INPUT, ScanScalarParams& params) {
   if (MatchDocIndicator(INPUT)) {
     if (params.onDocIndicator == BREAK) {
       return true;
@@ -85,14 +85,18 @@ bool ScanScalar::CheckDocIndicator(Stream& INPUT, ScanScalarParams& params) {
 //
 // . Depending on the parameters given, we store or stop
 //   and different places in the above flow.
-std::string ScanScalar::Apply(Stream& INPUT, ScanScalarParams& params) {
+std::string Scanner::ScanScalar(ScanScalarParams& params) {
   bool foundNonEmptyLine = false;
   bool pastOpeningBreak = (params.fold == FOLD_FLOW);
   bool emptyLine = false, moreIndented = false;
   int foldedNewlineCount = 0;
   bool foldedNewlineStartedMoreIndented = false;
   std::size_t lastEscapedChar = std::string::npos;
+
+  // std::string& scalar = m_scalarBuffer;
+  // scalar.clear();
   std::string scalar;
+
   params.leadingSpaces = false;
 
   while (INPUT) {
