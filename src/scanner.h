@@ -8,6 +8,7 @@
 #include <set>
 #include <stack>
 #include <string>
+#include <list>
 
 #include "scanscalar.h"
 #include "stream.h"
@@ -32,8 +33,17 @@ class Scanner {
 
   /** Removes the next token in the queue. */
   void pop();
-  void pop_unsafe() {  m_tokens.pop_front(); }
-
+  void pop_unsafe() {
+    m_freeTokens.splice(m_freeTokens.begin(), m_tokens, m_tokens.begin());
+  }
+  void push(Token&& token) {
+    if (m_freeTokens.empty()) {
+      m_tokens.push_back(std::move(token));
+    } else {
+       m_tokens.splice(m_tokens.end(), m_freeTokens, m_freeTokens.begin());
+       m_tokens.back() = std::move(token);
+    }
+  }
   /** Returns, but does not remove, the next token in the queue. */
   Token &peek();
   Token &peek_unsafe() { return m_tokens.front(); }
@@ -177,7 +187,8 @@ class Scanner {
   Stream INPUT;
 
   // the output (tokens)
-  std::deque<Token> m_tokens;
+  std::list<Token> m_tokens;
+  std::list<Token> m_freeTokens;
 
   // state info
   bool m_startedStream, m_endedStream;
