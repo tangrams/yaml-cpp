@@ -1,6 +1,7 @@
 #pragma once
 
 #include <list>
+#include <memory>
 
 #include "yaml-cpp/dll.h"
 #include "yaml-cpp/node/ptr.h"
@@ -8,7 +9,7 @@
 namespace YAML {
 namespace detail {
 class node;
-
+struct node_bucket;
 }  // namespace detail
 }  // namespace YAML
 
@@ -24,8 +25,7 @@ class YAML_CPP_API memory : public ref_counted {
   ~memory();
 
  private:
-  typedef std::list<node> Nodes;
-  Nodes m_nodes;
+  std::unique_ptr<node_bucket> m_nodes;
 };
 
 struct memory_ref : ref_counted {

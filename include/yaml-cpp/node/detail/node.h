@@ -18,6 +18,8 @@ class node {
   node() : m_pRef(new node_data) {}
 
   node(const node&) = delete;
+  // required for bucket reserve
+  node(node&&) = default;
   node& operator=(const node&) = delete;
 
   bool is(const node& rhs) const { return m_pRef == rhs.m_pRef; }
