@@ -20,9 +20,9 @@ const std::string& node_data::empty_scalar() {
 
 node_data::node_data()
     : m_type(NodeType::Undefined),
-      m_seqSize(0),
-      m_mark(Mark::null_mark()),
-      m_style(EmitterStyle::Default) {}
+      m_style(EmitterStyle::Default),
+      m_hasUndefined(false),
+      m_mark(Mark::null_mark()) {}
 
 void node_data::mark_defined() {
   if (m_type == NodeType::Undefined)
@@ -85,30 +85,39 @@ std::size_t node_data::size() const {
 
   switch (m_type) {
     case NodeType::Sequence:
-      compute_seq_size();
-      return m_seqSize;
+      return compute_seq_size();;
     case NodeType::Map:
-      compute_map_size();
-      return m_map.size() - m_undefinedPairs.size();
+      return compute_map_size();
     default:
       return 0;
   }
   return 0;
 }
 
-void node_data::compute_seq_size() const {
-  while (m_seqSize < m_sequence.size() && m_sequence[m_seqSize]->is_defined())
-    m_seqSize++;
+std::size_t node_data::compute_seq_size() const {
+  if (!m_hasUndefined) { return m_sequence.size(); }
+  std::size_t seqSize = 0;
+  while (seqSize < m_sequence.size() && m_sequence[seqSize]->is_defined())
+    seqSize++;
+
+  if (seqSize == 0) { m_hasUndefined = false; }
+  return seqSize;
 }
 
-void node_data::compute_map_size() const {
-  kv_pairs::iterator it = m_undefinedPairs.begin();
-  while (it != m_undefinedPairs.end()) {
-    kv_pairs::iterator jt = std::next(it);
-    if (it->first->is_defined() && it->second->is_defined())
-      m_undefinedPairs.erase(it);
-    it = jt;
-  }
+std::size_t node_data::compute_map_size() const {
+  std::size_t seqSize = m_map.size();
+  if (!m_hasUndefined) { return seqSize; }
+
+  m_undefinedPairs.remove_if([&](kv_pair& it){
+          if (it.first->is_defined() && it.second->is_defined()) {
+              return true;
+          } else {
+              seqSize--;
+              return false;
+          }
+      });
+  if (seqSize == 0) { m_hasUndefined = false; }
+  return seqSize;
 }
 
 const_node_iterator node_data::begin() const {
@@ -169,6 +178,7 @@ void node_data::push_back(node& node, shared_memory /* pMemory */) {
     throw BadPushback();
 
   m_sequence.push_back(&node);
+  m_hasUndefined = true;
 }
 
 void node_data::insert(node& key, node& value, shared_memory pMemory) {
@@ -248,7 +258,6 @@ bool node_data::remove(node& key, shared_memory /* pMemory */) {
 
 void node_data::reset_sequence() {
   m_sequence.clear();
-  m_seqSize = 0;
 }
 
 void node_data::reset_map() {
@@ -259,8 +268,10 @@ void node_data::reset_map() {
 void node_data::insert_map_pair(node& key, node& value) {
   m_map.emplace_back(&key, &value);
 
-  if (!key.is_defined() || !value.is_defined())
-    m_undefinedPairs.emplace_back(&key, &value);
+  if (!key.is_defined() || !value.is_defined()) {
+    m_undefinedPairs.emplace_front(&key, &value);
+    m_hasUndefined = true;
+  }
 }
 
 void node_data::convert_to_map(shared_memory pMemory) {
