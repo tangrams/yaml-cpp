@@ -163,14 +163,14 @@ std::string ScanScalar::Apply(Stream& INPUT, ScanScalarParams& params) {
       if (params.eatEnd) {
         throw ParserException(INPUT.mark(), ErrorMsg::EOF_IN_SCALAR);
       }
-      break;
+      break; // while (INPUT)
     }
 
     // doc indicator?
     if (params.onDocIndicator == BREAK &&
         INPUT.column() == 0 &&
         MatchDocIndicator(INPUT)) {
-      break;
+      break; // while (INPUT)
     }
 
     // are we done via character match?
@@ -178,7 +178,7 @@ std::string ScanScalar::Apply(Stream& INPUT, ScanScalarParams& params) {
       if (params.eatEnd) {
         INPUT.eat(n);
       }
-      break;
+      break; // while (INPUT)
     }
 
     // do we remove trailing whitespace?
@@ -236,32 +236,32 @@ std::string ScanScalar::Apply(Stream& INPUT, ScanScalarParams& params) {
     if (pastOpeningBreak) {
       switch (params.fold) {
         case DONT_FOLD:
-          scalar += "\n";
+          scalar += '\n';
           break;
         case FOLD_BLOCK:
           if (!emptyLine && !nextEmptyLine && !moreIndented &&
               !nextMoreIndented && INPUT.column() >= params.indent) {
-            scalar += " ";
+            scalar += ' ';
           } else if (nextEmptyLine) {
             foldedNewlineCount++;
           } else {
-            scalar += "\n";
+            scalar += '\n';
           }
 
           if (!nextEmptyLine && foldedNewlineCount > 0) {
             scalar += std::string(foldedNewlineCount - 1, '\n');
             if (foldedNewlineStartedMoreIndented ||
                 nextMoreIndented | !foundNonEmptyLine) {
-              scalar += "\n";
+              scalar += '\n';
             }
             foldedNewlineCount = 0;
           }
           break;
         case FOLD_FLOW:
           if (nextEmptyLine) {
-            scalar += "\n";
+            scalar += '\n';
           } else if (!emptyLine && !nextEmptyLine && !escapedNewline) {
-            scalar += " ";
+            scalar += ' ';
           }
           break;
       }
@@ -274,9 +274,9 @@ std::string ScanScalar::Apply(Stream& INPUT, ScanScalarParams& params) {
     // are we done via indentation?
     if (!emptyLine && INPUT.column() < params.indent) {
       params.leadingSpaces = true;
-      break;
+      break; // while (INPUT)
     }
-  }
+  } // end while(INPUT)
 
   // post-processing
   if (params.trimTrailingSpaces) {
