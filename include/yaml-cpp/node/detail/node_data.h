@@ -1,6 +1,6 @@
 #pragma once
 
-#include <list>
+#include <forward_list>
 #include <map>
 #include <string>
 #include <utility>
@@ -78,8 +78,8 @@ class YAML_CPP_API node_data : public ref_counted {
   static std::string empty_scalar;
 
  private:
-  void compute_seq_size() const;
-  void compute_map_size() const;
+  std::size_t compute_seq_size() const;
+  std::size_t compute_map_size() const;
 
   void reset_sequence();
   void reset_map();
@@ -92,27 +92,33 @@ class YAML_CPP_API node_data : public ref_counted {
   static node& convert_to_node(const T& rhs, shared_memory pMemory);
 
  private:
+  // 3 byte
   NodeType::value m_type;
+  EmitterStyle::value m_style;
+  mutable bool m_hasUndefined;
+  // 3 * 4 byte
+  Mark m_mark;
 
   // scalar
+  // 32 byte (GCC)
   std::string m_scalar;
 
   // sequence
+  // 24 byte (GCC)
   typedef std::vector<node*> node_seq;
   node_seq m_sequence;
 
-  mutable std::size_t m_seqSize;
-
   // map
+  // 24 byte (GCC)
   typedef std::vector<std::pair<node*, node*>> node_map;
   node_map m_map;
 
-  Mark m_mark;
+  // 32 byte (GCC)
   std::string m_tag;
-  EmitterStyle::value m_style;
 
+  // 8 byte - pointer
   typedef std::pair<node*, node*> kv_pair;
-  typedef std::list<kv_pair> kv_pairs;
+  typedef std::forward_list<kv_pair> kv_pairs;
   mutable kv_pairs m_undefinedPairs;
 };
 }
