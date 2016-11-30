@@ -60,7 +60,9 @@ class Stream : private noncopyable {
   int line() const { return m_mark.line; }
   int column() const { return m_mark.column; }
   void ResetColumn() { m_mark.column = 0; }
-  void SkipWhiteSpace();
+  void EatSpace();
+  void EatToEndOfLine();
+  void EatBlanks();
 
 
   // Must be large enough for all regexp we use
