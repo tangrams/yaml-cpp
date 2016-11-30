@@ -37,15 +37,20 @@ class node {
   bool equals(const T& rhs, shared_memory pMemory);
   bool equals(const char* rhs, shared_memory pMemory);
 
+  // set shared data
   void set_ref(const node& rhs) {
-    if (rhs.is_defined())
-      mark_defined();
+    bool defined = rhs.is_defined();
     m_pRef = rhs.m_pRef;
+    if (defined) {
+      mark_defined();
+    }
   }
   void set_data(node&& rhs) {
-    if (rhs.is_defined())
-      mark_defined();
+    bool defined = rhs.is_defined();
     m_pRef = std::move(rhs.m_pRef);
+    if (defined) {
+      mark_defined();
+    }
   }
 
   void set_mark(const Mark& mark) { m_pRef->set_mark(mark); }
