@@ -17,6 +17,9 @@ class node {
  public:
   node() : m_pRef(new node_data) {}
 
+  __attribute__((noinline))
+  ~node() {}
+
   node(const node&) = delete;
   // required for bucket reserve
   node(node&&) = default;
