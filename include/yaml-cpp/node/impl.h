@@ -277,7 +277,14 @@ inline void Node::AssignNode(const Node& rhs) {
     return;
   }
 
+  // Update any Node aliasing m_pNode
+  // (NodeTest.SimpleAlias)
   m_pNode->set_ref(*rhs.m_pNode);
+
+  // All aliasing Nodes will have the same shared_memory,
+  // so any nodes referenced by rhs will be added to their
+  // shared_memory as well
+  // (NodeTest.ChildNodesAliveAfterOwnerNodeExitsScope)
   mergeMemory(rhs);
   m_pNode = rhs.m_pNode;
 }
