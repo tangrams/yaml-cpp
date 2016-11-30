@@ -195,7 +195,7 @@ void Scanner::ScanNextToken() {
 
 void Scanner::ScanToNextToken() {
   while (1) {
-    INPUT.SkipWhiteSpace();
+    INPUT.EatSpace();
 
     // first eat whitespace
     while (INPUT && IsWhitespaceToBeEaten(INPUT.peek())) {

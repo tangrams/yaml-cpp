@@ -397,13 +397,11 @@ void Scanner::ScanBlockScalar() {
   }
 
   // now eat whitespace
-  while (Exp::Blank::Matches(INPUT))
-    INPUT.eat();
+  INPUT.EatBlanks();
 
   // and comments to the end of the line
   if (Exp::Comment::Matches(INPUT))
-    while (INPUT && !Exp::Break::Matches(INPUT))
-      INPUT.eat();
+      INPUT.EatToEndOfLine();
 
   // if it's not a line break, then we ran into a bad character inline
   if (INPUT && !Exp::Break::Matches(INPUT))
