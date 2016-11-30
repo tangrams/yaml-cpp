@@ -28,12 +28,8 @@ int Scanner::MatchScalarEnd(const Stream& in) {
   using namespace Exp;
   using ScalarEnd = Matcher<
       OR < SEQ < Char<':'>,
-                 detail::BlankOrBreak>,
-           SEQ < Char<':'>,
-                 Empty >,
-           SEQ < detail::Blank,
-                 detail::Comment>,
-           SEQ < detail::Break,
+                 OR < detail::BlankOrBreak, Empty>>,
+           SEQ < detail::BlankOrBreak,
                  detail::Comment>>>;
 
   return ScalarEnd::Match(in);
