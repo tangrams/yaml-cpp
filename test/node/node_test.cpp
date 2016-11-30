@@ -414,8 +414,13 @@ TEST(NodeTest, KeyNodeExitsScope) {
     Node temp("Hello, world");
     node[temp] = 0;
   }
+
+  EXPECT_TRUE(node.IsMap());
+  EXPECT_EQ(node.size(), 1);
+
   for (Node::const_iterator it = node.begin(); it != node.end(); ++it) {
-    (void)it;
+    EXPECT_EQ(it->first.Scalar(), "Hello, world");
+    EXPECT_EQ(it->second.Scalar(), "0");
   }
 }
 
