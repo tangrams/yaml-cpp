@@ -2,6 +2,7 @@
 
 #include "stream.h"
 #include "streamcharsource.h"
+#include "exp.h"
 
 #ifndef YAML_PREFETCH_SIZE
 #define YAML_PREFETCH_SIZE 8192
@@ -330,23 +331,52 @@ void Stream::AdvanceCurrent() {
 }
 
 // NB only skips readahead whitespace
-void Stream::SkipWhiteSpace() {
-    size_t count = 0;
-    for (size_t i = m_readaheadPos; i < m_readaheadSize; i++) {
-        if (m_buffer[i] != ' ') { break; }
-        count++;
+void Stream::EatSpace() {
+
+  while (m_char == ' ') {
+
+    m_readaheadPos++;
+    m_mark.pos++;
+    m_mark.column++;
+
+    if (ReadAheadTo(0)) {
+      m_char = m_buffer[m_readaheadPos];
+    } else {
+      m_char = Stream::eof();
     }
-    if (count > 0) {
-        //m_readahead.erase(m_readahead.begin(), m_readahead.begin() + count);
-        m_readaheadPos += count;
-        m_mark.pos += count;
-        m_mark.column += count;
-        if (ReadAheadTo(0)) {
-            m_char = m_buffer[m_readaheadPos];
-        } else {
-            m_char = Stream::eof();
-        }
+  }
+}
+
+void Stream::EatToEndOfLine() {
+
+  while (m_char != Stream::eof() && !Exp::Break::Matches(*this)) {
+
+    m_readaheadPos++;
+    m_mark.pos++;
+    m_mark.column++;
+
+    if (ReadAheadTo(0)) {
+      m_char = m_buffer[m_readaheadPos];
+    } else {
+      m_char = Stream::eof();
     }
+  }
+}
+
+void Stream::EatBlanks() {
+
+  while (m_char == ' ' || m_char == '\t') {
+
+    m_readaheadPos++;
+    m_mark.pos++;
+    m_mark.column++;
+
+    if (ReadAheadTo(0)) {
+      m_char = m_buffer[m_readaheadPos];
+    } else {
+      m_char = Stream::eof();
+    }
+  }
 }
 
 int Stream::init(char* source) const {
