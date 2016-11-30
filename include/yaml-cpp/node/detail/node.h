@@ -151,22 +151,29 @@ class node {
       return;
 
     m_pRef->mark_defined();
-    for (nodes::iterator it = m_dependencies.begin();
-         it != m_dependencies.end(); ++it)
-      (*it)->mark_defined();
-    m_dependencies.clear();
+
+    if (m_dependencies) {
+      for (auto& it : *m_dependencies) {
+        it->mark_defined();
+      }
+      m_dependencies.reset();
+    }
   }
 
   void add_dependency(node& rhs) {
     if (is_defined())
       rhs.mark_defined();
-    else
-      m_dependencies.insert(&rhs);
+    else {
+      if (!m_dependencies) {
+        m_dependencies = std::unique_ptr<nodes>(new nodes);
+      }
+      m_dependencies->insert(&rhs);
+    }
   }
 
   mutable node_data_ref m_pRef;
   typedef std::set<node*> nodes;
-  nodes m_dependencies;
+  std::unique_ptr<nodes> m_dependencies;
 };
 }
 }
