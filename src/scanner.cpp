@@ -255,10 +255,9 @@ bool Scanner::IsWhitespaceToBeEaten(char ch) {
 void Scanner::StartStream() {
   m_startedStream = true;
   m_simpleKeyAllowed = true;
-  std::unique_ptr<IndentMarker> pIndent(
-      new IndentMarker(-1, IndentMarker::NONE));
-  m_indentRefs.push_back(std::move(pIndent));
-  m_indents.push(m_indentRefs.back().get());
+
+  m_indentRefs.emplace_back(-1, IndentMarker::NONE);
+  m_indents.push(&m_indentRefs.back());
 }
 
 void Scanner::EndStream() {
@@ -300,27 +299,27 @@ Scanner::IndentMarker* Scanner::PushIndentTo(int column,
     return nullptr;
   }
 
-  std::unique_ptr<IndentMarker> pIndent(new IndentMarker(column, type));
-  IndentMarker& indent = *pIndent;
   const IndentMarker& lastIndent = *m_indents.top();
 
   // is this actually an indentation?
-  if (indent.column < lastIndent.column) {
+  if (column < lastIndent.column) {
     return nullptr;
   }
-  if (indent.column == lastIndent.column &&
-      !(indent.type == IndentMarker::SEQ &&
+  if (column == lastIndent.column &&
+      !(type == IndentMarker::SEQ &&
         lastIndent.type == IndentMarker::MAP)) {
     return nullptr;
   }
+
+  m_indentRefs.emplace_back(column, type);
+  IndentMarker& indent = m_indentRefs.back();
 
   // push a start token
   indent.pStartToken = PushToken(GetStartTokenFor(type));
 
   // and then the indent
   m_indents.push(&indent);
-  m_indentRefs.push_back(std::move(pIndent));
-  return m_indentRefs.back().get();
+  return &m_indentRefs.back();
 }
 
 void Scanner::PopIndentToHere() {
