@@ -196,7 +196,7 @@ class Scanner {
   bool m_canBeJSONFlow;
   std::stack<SimpleKey,std::vector<SimpleKey>> m_simpleKeys;
   std::stack<IndentMarker *,std::vector<IndentMarker *>> m_indents;
-  std::vector<std::unique_ptr<IndentMarker>> m_indentRefs;  // for "garbage collection"
+  std::deque<IndentMarker> m_indentRefs;  // for "garbage collection"
   std::stack<FLOW_MARKER, std::vector<FLOW_MARKER>> m_flows;
 
   std::string m_scalarBuffer;
