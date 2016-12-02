@@ -30,7 +30,7 @@ class YAML_CPP_API memory : public ref_counted {
 
 struct memory_ref : ref_counted {
 
-  ref_holder<memory> m_ptr;
+  ref_holder<memory, true> m_ptr;
 
   memory_ref() : m_ptr(new memory) {}
   ~memory_ref() {}
@@ -46,7 +46,7 @@ struct memory_ref : ref_counted {
   };
 };
 
-typedef ref_holder<memory_ref> shared_memory;
+typedef ref_holder<memory_ref, true> shared_memory;
 
 }
 }
