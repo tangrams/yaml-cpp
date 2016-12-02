@@ -5,29 +5,34 @@
 namespace YAML {
 namespace detail {
 
-template <typename T>
+template <typename T, bool owned_region>
 struct ref_holder {
-  ~ref_holder<T>() { release(); }
-  ref_holder<T>(T* ptr) {
+
+   using holder = ref_holder<T, owned_region>;
+
+   __attribute__((always_inline))
+  ~ref_holder() { release(); }
+
+  ref_holder(T* ptr) {
     if (ptr) {
       ptr->hold();
     }
     m_ptr = ptr;
   }
 
-  ref_holder<T>(const ref_holder<T>& ref) {
+  ref_holder(const holder& ref) {
     if (ref.m_ptr) {
       ref.m_ptr->hold();
     }
     m_ptr = ref.m_ptr;
   }
 
-  ref_holder<T>(ref_holder<T>&& ref) {
+  ref_holder(holder&& ref) {
     m_ptr = ref.m_ptr;
     ref.m_ptr = nullptr;
   }
 
-  ref_holder<T>& operator=(const ref_holder<T>& ref) {
+  holder& operator=(const holder& ref) {
     if (ref.m_ptr == m_ptr) {
       return *this;
     }
@@ -40,7 +45,7 @@ struct ref_holder {
     return *this;
   }
 
-  ref_holder<T>& operator=(ref_holder<T>&& ref) {
+  holder& operator=(holder&& ref) {
     if (ref.m_ptr == m_ptr) {
       return *this;
     }
@@ -51,8 +56,8 @@ struct ref_holder {
     return *this;
   }
 
-  bool operator==(const ref_holder<T>& ref) const { return m_ptr == ref.m_ptr; }
-  bool operator!=(const ref_holder<T>& ref) const { return m_ptr != ref.m_ptr; }
+  bool operator==(const holder& ref) const { return m_ptr == ref.m_ptr; }
+  bool operator!=(const holder& ref) const { return m_ptr != ref.m_ptr; }
 
   const T* operator->() const { return m_ptr; }
   T* operator->() { return m_ptr; }
@@ -77,9 +82,17 @@ struct ref_holder {
   operator bool() const { return m_ptr != nullptr; }
 
  private:
+  template<bool D = owned_region, typename std::enable_if<D, int>::type = 0>
   void release() {
     if (m_ptr && m_ptr->release()) {
       delete m_ptr;
+      m_ptr = nullptr;
+    }
+  }
+  template<bool D = owned_region, typename std::enable_if<!D, int>::type = 0>
+  void release() {
+    if (m_ptr && m_ptr->release()) {
+      m_ptr->~T();
       m_ptr = nullptr;
     }
   }

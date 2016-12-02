@@ -1,5 +1,5 @@
 #include "yaml-cpp/node/detail/memory.h"
-#include "yaml-cpp/node/detail/node.h"  // IWYU pragma: keep
+#include "yaml-cpp/node/detail/node.h"
 #include "yaml-cpp/node/ptr.h"
 
 #include <vector>
@@ -8,14 +8,43 @@ namespace YAML {
 namespace detail {
 
 struct node_bucket {
-    static const size_t size = 512;
+    static const size_t size = 8;
     node_bucket(node_bucket* next_, size_t capacity) : next(next_) {
         nodes.reserve(capacity);
     }
-    ~node_bucket() {}
-    std::vector<node> nodes;
+
+    //__attribute__((noinline))
+    ~node_bucket();
+    void clear();
+
+    struct value {
+        node n;
+        std::aligned_storage<sizeof(node_data),alignof(node_data)>::type data;
+
+        value() {
+            new (&data) node_data;
+
+            n.set_data(reinterpret_cast<node_data*>(&data));
+        }
+    };
+    std::vector<value> nodes;
     std::unique_ptr<node_bucket> next = nullptr;
 };
+
+void node_bucket::clear() {
+
+    nodes.clear();
+
+    if (next && !next->nodes.empty()) {
+        next->clear();
+    }
+}
+
+node_bucket::~node_bucket() {
+    if (!nodes.empty()) {
+        clear();
+    }
+}
 
 node& memory::create_node() {
     node_bucket* insert = m_nodes.get();
@@ -30,7 +59,7 @@ node& memory::create_node() {
 
     if (insert && insert->nodes.size() < insert->nodes.capacity()) {
         insert->nodes.emplace_back();
-        return insert->nodes.back();
+        return insert->nodes.back().n;
     }
 
     if (!m_nodes) {
@@ -39,9 +68,8 @@ node& memory::create_node() {
         m_nodes = std::unique_ptr<node_bucket>(new node_bucket(m_nodes.release(), node_bucket::size));
     }
     m_nodes->nodes.emplace_back();
-    return m_nodes->nodes.back();
+    return m_nodes->nodes.back().n;
 }
-
 
 void memory::merge(memory& rhs) {
 
@@ -87,6 +115,8 @@ void memory::merge(memory& rhs) {
 }
 
 memory::memory() {}
-memory::~memory() {}
+memory::~memory() {
+
+}
 }
 }
