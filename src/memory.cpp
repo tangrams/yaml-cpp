@@ -8,7 +8,7 @@ namespace YAML {
 namespace detail {
 
 struct node_bucket {
-    static const size_t size = 8;
+    static const size_t size = 64;
     node_bucket(node_bucket* next_, size_t capacity) : next(next_) {
         nodes.reserve(capacity);
     }
