@@ -148,13 +148,13 @@ inline T Node::as(const S& fallback) const {
 inline const std::string& Node::Scalar() const {
   if (!isValid())
     throw InvalidNode();
-  return m_pNode ? m_pNode->scalar() : detail::node_data::empty_scalar;
+  return m_pNode ? m_pNode->scalar() : detail::node_data::emptyString();
 }
 
 inline const std::string& Node::Tag() const {
   if (!isValid())
     throw InvalidNode();
-  return m_pNode ? m_pNode->tag() : detail::node_data::empty_scalar;
+  return m_pNode ? m_pNode->tag() : detail::node_data::emptyString();
 }
 
 inline void Node::SetTag(const std::string& tag) {
