@@ -617,5 +617,24 @@ TEST(NodeTest, AdvancedMemoryMerging) {
   }
 }
 
+std::unique_ptr<Node> s_node;
+
+TEST(NodeTest, StaticNodeTest) {
+
+  Node node;
+  {
+    Node tmp;
+    Node n = tmp["Message"];
+    n["Hello"] = "World";
+    node = tmp;
+  }
+
+  EXPECT_TRUE(node.IsMap());
+  EXPECT_TRUE(node["Message"].IsMap());
+  EXPECT_TRUE(node["Message"]["Hello"].IsScalar());
+  EXPECT_EQ(node["Message"]["Hello"].Scalar(), "World");
+
+  s_node = std::unique_ptr<Node>(new Node(node));
+}
 }
 }
