@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <memory>
 
 namespace YAML {
 const std::string TokenNames[] = {
@@ -14,8 +15,8 @@ const std::string TokenNames[] = {
 
 struct Token {
   // enums
-  enum STATUS { VALID, INVALID, UNVERIFIED };
-  enum TYPE {
+  enum STATUS : char { VALID, INVALID, UNVERIFIED };
+  enum TYPE : char {
     NONE = 0,
     PLAIN_SCALAR = 1,
     NON_PLAIN_SCALAR,
@@ -42,23 +43,33 @@ struct Token {
 
   // data
   Token(TYPE type_, Mark mark_)
-      : status(VALID), type(type_), mark(mark_), data(0) {}
+      : type(type_), status(VALID), data(0), mark(mark_) {}
 
-  Token(TYPE type_, Mark mark_, std::string value_)
-      : status(VALID), type(type_), mark(mark_), value(value_), data(0) {}
+  Token(TYPE type_, Mark mark_, std::string&& value_)
+      : type(type_), status(VALID), data(0), mark(mark_), value(std::move(value_)) {}
 
   friend std::ostream& operator<<(std::ostream& out, const Token& token) {
     out << TokenNames[token.type] << std::string(": ") << token.value;
-    for (std::size_t i = 0; i < token.params.size(); i++)
-      out << std::string(" ") << token.params[i];
+    if (token.params) {
+        for (auto& p : *token.params) {
+            out << std::string(" ") << p;
+        }
+    }
     return out;
   }
 
-  STATUS status;
+  void pushParam(std::string param) {
+    if (!params) {
+      params = std::unique_ptr<std::vector<std::string>>(new std::vector<std::string>);
+    }
+    params->push_back(std::move(param));
+  }
+
   TYPE type;
+  STATUS status;
+  int data;
   Mark mark;
   std::string value;
-  std::vector<std::string> params;
-  int data;
+  std::unique_ptr<std::vector<std::string>> params;
 };
 }
