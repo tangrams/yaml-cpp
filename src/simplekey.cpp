@@ -68,7 +68,7 @@ void Scanner::InsertPotentialSimpleKey() {
   }
 
   // then add the (now unverified) key
-  push({Token::KEY, INPUT.mark()});
+  push(Token::KEY, INPUT.mark());
   key.pKey = &m_tokens.back();
   key.pKey->status = Token::UNVERIFIED;
 

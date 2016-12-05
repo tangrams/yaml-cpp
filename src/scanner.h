@@ -37,14 +37,17 @@ class Scanner {
   void pop_unsafe() {
     m_freeTokens.splice(m_freeTokens.begin(), m_tokens, m_tokens.begin());
   }
-  void push(Token&& token) {
-    if (m_freeTokens.empty()) {
-      m_tokens.push_back(std::move(token));
+
+  template <typename ...Args>
+  void push(Args&&... args) {
+    if (!m_freeTokens.empty()) {
+      m_tokens.splice(m_tokens.end(), m_freeTokens, m_freeTokens.begin());
+      m_tokens.back() = {std::forward<Args>(args)...};
     } else {
-       m_tokens.splice(m_tokens.end(), m_freeTokens, m_freeTokens.begin());
-       m_tokens.back() = std::move(token);
+      m_tokens.emplace_back(std::forward<Args>(args)...);
     }
   }
+
   /** Returns, but does not remove, the next token in the queue. */
   Token &peek();
   Token &peek_unsafe() { return m_tokens.front(); }
@@ -94,7 +97,7 @@ class Scanner {
 
   Token *PushToken(Token::TYPE type);
 
-  bool InFlowContext() const { return !m_flows.empty(); }
+  inline bool InFlowContext() const { return !m_flows.empty(); }
   bool InBlockContext() const { return m_flows.empty(); }
   std::size_t GetFlowLevel() const { return m_flows.size(); }
 
@@ -123,8 +126,11 @@ class Scanner {
 
   /** Pops a single indent, pushing the proper token. */
   void PopIndent();
-  int GetTopIndent() const;
 
+  inline int GetTopIndent() const {
+    if (m_indents.empty()) { return 0; }
+    return m_indents.top()->column;
+  }
   // checking input
   bool CanInsertPotentialSimpleKey() const;
   bool ExistsActiveSimpleKey() const;

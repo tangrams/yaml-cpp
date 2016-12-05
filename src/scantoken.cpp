@@ -48,7 +48,7 @@ void Scanner::ScanDirective() {
     while (INPUT && !Exp::BlankOrBreak::Matches(INPUT))
       param += INPUT.get();
 
-    token.params.push_back(param);
+    token.pushParam(param);
   }
 
   push(std::move(token));
@@ -61,7 +61,7 @@ void Scanner::ScanDocStart() {
   m_simpleKeyAllowed = false;
   m_canBeJSONFlow = false;
 
-  push({Token::DOC_START, INPUT.mark()});
+  push(Token::DOC_START, INPUT.mark());
   // eat after marked
   INPUT.eat(3);
 }
@@ -73,7 +73,7 @@ void Scanner::ScanDocEnd() {
   m_simpleKeyAllowed = false;
   m_canBeJSONFlow = false;
 
-  push({Token::DOC_END, INPUT.mark()});
+  push(Token::DOC_END, INPUT.mark());
   INPUT.eat(3);
 }
 
@@ -92,7 +92,7 @@ void Scanner::ScanFlowStart() {
   Token::TYPE type =
       (flowType == FLOW_SEQ ? Token::FLOW_SEQ_START : Token::FLOW_MAP_START);
 
-  push({type, mark});
+  push(type, mark);
 }
 
 // FlowEnd
@@ -103,7 +103,7 @@ void Scanner::ScanFlowEnd() {
   // we might have a solo entry in the flow context
   if (InFlowContext()) {
     if (m_flows.top() == FLOW_MAP && VerifySimpleKey())
-      push({Token::VALUE, INPUT.mark()});
+      push(Token::VALUE, INPUT.mark());
     else if (m_flows.top() == FLOW_SEQ)
       InvalidateSimpleKey();
   }
@@ -122,7 +122,7 @@ void Scanner::ScanFlowEnd() {
   m_flows.pop();
 
   Token::TYPE type = (flowType ? Token::FLOW_SEQ_END : Token::FLOW_MAP_END);
-  push({type, mark});
+  push(type, mark);
 }
 
 // FlowEntry
@@ -130,7 +130,7 @@ void Scanner::ScanFlowEntry() {
   // we might have a solo entry in the flow context
   if (InFlowContext()) {
     if (m_flows.top() == FLOW_MAP && VerifySimpleKey())
-      push({Token::VALUE, INPUT.mark()});
+      push(Token::VALUE, INPUT.mark());
     else if (m_flows.top() == FLOW_SEQ)
       InvalidateSimpleKey();
   }
@@ -138,7 +138,7 @@ void Scanner::ScanFlowEntry() {
   m_simpleKeyAllowed = true;
   m_canBeJSONFlow = false;
 
-  push({Token::FLOW_ENTRY, INPUT.mark()});
+  push(Token::FLOW_ENTRY, INPUT.mark());
   // eat after marked
   INPUT.eat();
 }
@@ -157,7 +157,7 @@ void Scanner::ScanBlockEntry() {
   m_simpleKeyAllowed = true;
   m_canBeJSONFlow = false;
 
-  push({Token::BLOCK_ENTRY, INPUT.mark()});
+  push(Token::BLOCK_ENTRY, INPUT.mark());
   // eat after marked
   INPUT.eat();
 }
@@ -175,7 +175,7 @@ void Scanner::ScanKey() {
   // can only put a simple key here if we're in block context
   m_simpleKeyAllowed = InBlockContext();
 
-  push({Token::KEY, INPUT.mark()});
+  push(Token::KEY, INPUT.mark());
   // eat after marked
   INPUT.eat();
 }
@@ -203,7 +203,7 @@ void Scanner::ScanValue() {
     m_simpleKeyAllowed = InBlockContext();
   }
 
-  push({Token::VALUE, INPUT.mark()});
+  push(Token::VALUE, INPUT.mark());
   // eat after marked
   INPUT.eat();
 }
@@ -238,7 +238,7 @@ void Scanner::ScanAnchorOrAlias() {
                                               : ErrorMsg::CHAR_IN_ANCHOR);
 
   // and we're done
-  push({(alias ? Token::ALIAS : Token::ANCHOR), mark, std::move(name)});
+  push((alias ? Token::ALIAS : Token::ANCHOR), mark, std::move(name));
 }
 
 // Tag
@@ -272,7 +272,7 @@ void Scanner::ScanTag() {
     if (canBeHandle && INPUT.peek() == Keys::Tag) {
       // eat the indicator
       INPUT.eat();
-      token.params.push_back(ScanTagSuffix(INPUT));
+      token.pushParam(ScanTagSuffix(INPUT));
       token.data = Tag::NAMED_HANDLE;
     }
   }
@@ -309,7 +309,7 @@ void Scanner::ScanPlainScalar() {
 
   Mark mark = INPUT.mark();
 
-  push({Token::PLAIN_SCALAR, mark, ScanScalar(params)});
+  push(Token::PLAIN_SCALAR, mark, ScanScalar(params));
 
   // can have a simple key only if we ended the scalar by starting a new line
   m_simpleKeyAllowed = params.leadingSpaces;
@@ -319,7 +319,6 @@ void Scanner::ScanPlainScalar() {
   // if(Exp::IllegalCharInScalar.Matches(INPUT))
   //	throw ParserException(INPUT.mark(), ErrorMsg::CHAR_IN_SCALAR);
 }
-
 
 // QuotedScalar
 void Scanner::ScanQuotedScalar() {
@@ -355,7 +354,7 @@ void Scanner::ScanQuotedScalar() {
   INPUT.eat();
 
   // and scan
-  push({Token::NON_PLAIN_SCALAR, mark, ScanScalar(params)});
+  push(Token::NON_PLAIN_SCALAR, mark, ScanScalar(params));
 
   m_simpleKeyAllowed = false;
   m_canBeJSONFlow = true;
@@ -418,7 +417,7 @@ void Scanner::ScanBlockScalar() {
   params.trimTrailingSpaces = false;
   params.onTabInIndentation = THROW;
 
-  push({Token::NON_PLAIN_SCALAR, mark, ScanScalar(params)});
+  push(Token::NON_PLAIN_SCALAR, mark, ScanScalar(params));
 
   // simple keys always ok after block scalars (since we're gonna start a new
   // line anyways)

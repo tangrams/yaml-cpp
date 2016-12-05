@@ -31,7 +31,7 @@ bool Scanner::empty() {
 void Scanner::pop() {
   EnsureTokensInQueue();
   if (!m_tokens.empty()) {
-    m_freeTokens.splice(m_freeTokens.begin(), m_tokens, m_tokens.begin());
+    pop_unsafe();
   }
 }
 
@@ -274,7 +274,7 @@ void Scanner::EndStream() {
 }
 
 Token* Scanner::PushToken(Token::TYPE type) {
-  push({type, INPUT.mark()});
+  push(type, INPUT.mark());
   return &m_tokens.back();
 }
 
@@ -376,17 +376,10 @@ void Scanner::PopIndent() {
   }
 
   if (indent.type == IndentMarker::SEQ) {
-    push({Token::BLOCK_SEQ_END, INPUT.mark()});
+    push(Token::BLOCK_SEQ_END, INPUT.mark());
   } else if (indent.type == IndentMarker::MAP) {
-    push({Token::BLOCK_MAP_END, INPUT.mark()});
+    push(Token::BLOCK_MAP_END, INPUT.mark());
   }
-}
-
-int Scanner::GetTopIndent() const {
-  if (m_indents.empty()) {
-    return 0;
-  }
-  return m_indents.top()->column;
 }
 
 void Scanner::ThrowParserException(const std::string& msg) const {
