@@ -229,31 +229,21 @@ static void ScanLine(Stream& INPUT, const ScanScalarParams& params,
 
   while (INPUT) {
 
-    // find break posiion
     Exp::Source<4> input;
     INPUT.LookaheadBuffer(input);
 
-    // space 0x20 : 0010000ß
-    // tab   0x09 : 00001001
-    // LF    0x0A : 00001010
-    // CR    0x0D : 00001101
-    bool isWhiteSpace = false;
+    bool isWhiteSpace = Exp::Blank::Matches(input);
 
-    if ((input[0] & 0x28) != 0) {
-      isWhiteSpace = Exp::Blank::Matches(input);
-      if (!isWhiteSpace) {
-        if (Exp::Break::Matches(input)) {
+    if (!isWhiteSpace) {
+      if (Exp::Break::Matches(input)) { break; }
+
+      // document indicator?
+      if (unlikely(INPUT.column() == 0) &&
+          MatchDocIndicator(INPUT)) {
+        if (params.onDocIndicator == BREAK) {
           break;
-        }
-        // document indicator?
-        if (unlikely(INPUT.column() == 0) &&
-            MatchDocIndicator(INPUT)) {
-
-          if (params.onDocIndicator == BREAK) {
-            break;
-          } else if (params.onDocIndicator == THROW) {
-            throw ParserException(INPUT.mark(), ErrorMsg::DOC_IN_SCALAR);
-          }
+        } else if (params.onDocIndicator == THROW) {
+          throw ParserException(INPUT.mark(), ErrorMsg::DOC_IN_SCALAR);
         }
       }
     }
