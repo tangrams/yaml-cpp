@@ -13,14 +13,12 @@ class NullEventHandler : public EventHandler {
   virtual void OnNull(const Mark&, anchor_t) {}
   virtual void OnAlias(const Mark&, anchor_t) {}
   virtual void OnScalar(const Mark&, const std::string&, anchor_t,
-                        const std::string&) {}
-
+                        std::string) {}
   virtual void OnSequenceStart(const Mark&, const std::string&, anchor_t,
-                               EmitterStyle::value /* style */) {}
+                               EmitterStyle::value) {}
   virtual void OnSequenceEnd() {}
-
   virtual void OnMapStart(const Mark&, const std::string&, anchor_t,
-                          EmitterStyle::value /* style */) {}
+                          EmitterStyle::value) {}
   virtual void OnMapEnd() {}
 };
 

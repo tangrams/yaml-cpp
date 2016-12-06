@@ -26,7 +26,7 @@ class NullEventHandler : public YAML::EventHandler {
   void OnNull(const YAML::Mark&, YAML::anchor_t) override {}
   void OnAlias(const YAML::Mark&, YAML::anchor_t) override {}
   void OnScalar(const YAML::Mark&, const std::string&, YAML::anchor_t,
-                const std::string&) override {}
+                std::string) override {}
 
   void OnSequenceStart(const YAML::Mark&, const std::string&, YAML::anchor_t,
                        YAML::EmitterStyle::value) override {}

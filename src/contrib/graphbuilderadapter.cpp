@@ -19,17 +19,17 @@ void GraphBuilderAdapter::OnAlias(const Mark &mark, anchor_t anchor) {
   DispositionNode(m_builder.AnchorReference(mark, pReffedNode));
 }
 
-void GraphBuilderAdapter::OnScalar(const Mark &mark, const std::string &tag,
-                                   anchor_t anchor, const std::string &value) {
+void GraphBuilderAdapter::OnScalar(const Mark &mark, const std::string& tag,
+                                   anchor_t anchor, std::string value) {
   void *pParent = GetCurrentParent();
-  void *pNode = m_builder.NewScalar(mark, tag, pParent, value);
+  void *pNode = m_builder.NewScalar(mark, std::move(tag), pParent, std::move(value));
   RegisterAnchor(anchor, pNode);
 
   DispositionNode(pNode);
 }
 
 void GraphBuilderAdapter::OnSequenceStart(const Mark &mark,
-                                          const std::string &tag,
+                                          const std::string& tag,
                                           anchor_t anchor,
                                           EmitterStyle::value /* style */) {
   void *pNode = m_builder.NewSequence(mark, tag, GetCurrentParent());
@@ -44,7 +44,7 @@ void GraphBuilderAdapter::OnSequenceEnd() {
   DispositionNode(pSequence);
 }
 
-void GraphBuilderAdapter::OnMapStart(const Mark &mark, const std::string &tag,
+void GraphBuilderAdapter::OnMapStart(const Mark &mark, const std::string& tag,
                                      anchor_t anchor,
                                      EmitterStyle::value /* style */) {
   void *pNode = m_builder.NewMap(mark, tag, GetCurrentParent());
