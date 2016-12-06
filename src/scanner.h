@@ -14,6 +14,7 @@
 #include "stream.h"
 #include "token.h"
 #include "yaml-cpp/mark.h"
+#include "exp.h"
 
 namespace YAML {
 class Node;
@@ -174,13 +175,12 @@ class Scanner {
 
   // scanscalar.cpp
   std::string ScanScalar(ScanScalarParams& info);
-  static int MatchScalarEmpty(const Stream& in);
-  static int MatchScalarSingleQuoted(const Stream& in);
-  static int MatchScalarDoubleQuoted(const Stream& in);
-  static int MatchScalarEnd(const Stream& in);
-  static int MatchScalarEndInFlow(const Stream& in);
-  static bool MatchDocIndicator(const Stream& in);
-  static bool CheckDocIndicator(Stream& INPUT, ScanScalarParams& params);
+  static int MatchScalarEmpty(const Exp::StreamSource& in);
+  static int MatchScalarSingleQuoted(const Exp::StreamSource& in);
+  static int MatchScalarDoubleQuoted(const Exp::StreamSource& in);
+  static int MatchScalarEnd(const Exp::StreamSource& in);
+  static int MatchScalarEndInFlow(const Exp::StreamSource& in);
+  static bool MatchDocIndicator(const Exp::StreamSource& in);
 
  private:
   // the stream
