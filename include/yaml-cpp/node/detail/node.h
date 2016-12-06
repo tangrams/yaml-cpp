@@ -33,7 +33,7 @@ class node {
   const Mark& mark() const { return m_pRef->mark(); }
   NodeType::value type() const { return m_pRef->type(); }
 
-  const std::string& scalar() const { return m_pRef->scalar(); }
+  const std::string& scalar() const { return static_cast<const node_data&>(*m_pRef).scalar(); }
   const std::string& tag() const { return m_pRef->tag(); }
   EmitterStyle::value style() const { return m_pRef->style(); }
 
