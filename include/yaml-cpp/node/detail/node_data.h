@@ -23,6 +23,7 @@ namespace detail {
 class YAML_CPP_API node_data : public ref_counted {
  public:
   node_data();
+  ~node_data();
   node_data(const node_data&) = delete;
   node_data& operator=(const node_data&) = delete;
   node_data& operator=(node_data&&) = default;
@@ -42,7 +43,8 @@ class YAML_CPP_API node_data : public ref_counted {
     return m_type;
   }
   const std::string& scalar() const { return m_scalar; }
-  const std::string& tag() const { return m_tag; }
+  const std::string& tag() const { return *m_tag; }
+
   EmitterStyle::value style() const { return m_style; }
 
   // size/iterator
@@ -74,8 +76,11 @@ class YAML_CPP_API node_data : public ref_counted {
   template <typename Key, typename Value>
   void force_insert(const Key& key, const Value& value, shared_memory pMemory);
 
- public:
   static const std::string& empty_scalar();
+
+  static std::string tag_none;
+  static std::string tag_other;
+  static std::string tag_non_plain_scalar;
 
  private:
   std::size_t compute_seq_size() const;
@@ -114,7 +119,7 @@ class YAML_CPP_API node_data : public ref_counted {
   node_map m_map;
 
   // 32 byte (GCC)
-  std::string m_tag;
+  const std::string* m_tag;
 
   // 8 byte - pointer
   typedef std::pair<node*, node*> kv_pair;

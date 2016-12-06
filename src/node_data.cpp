@@ -18,15 +18,28 @@ const std::string& node_data::empty_scalar() {
     return svalue;
 }
 
+std::string node_data::tag_none = "";
+std::string node_data::tag_other = "!";
+std::string node_data::tag_non_plain_scalar = "?";
+
 node_data::node_data()
     : m_type(NodeType::Undefined),
       m_style(EmitterStyle::Default),
       m_hasUndefined(false),
-      m_mark(Mark::null_mark()) {}
+      m_mark(Mark::null_mark()),
+      m_tag(&tag_none) {}
 
 void node_data::mark_defined() {
   if (m_type == NodeType::Undefined)
     m_type = NodeType::Null;
+}
+
+node_data::~node_data() {
+    if (m_tag != &tag_none &&
+        m_tag != &tag_other &&
+        m_tag != &tag_non_plain_scalar) {
+        delete m_tag;
+    }
 }
 
 void node_data::set_mark(const Mark& mark) { m_mark = mark; }
@@ -60,7 +73,23 @@ void node_data::set_type(NodeType::value type) {
   }
 }
 
-void node_data::set_tag(const std::string& tag) { m_tag = tag; }
+void node_data::set_tag(const std::string& tag) {
+  if (m_tag != &tag_none &&
+      m_tag != &tag_other &&
+      m_tag != &tag_non_plain_scalar) {
+    delete m_tag;
+  }
+
+  if (tag == "") {
+      m_tag = &tag_none;
+  } else if (tag == "!") {
+      m_tag = &tag_other;
+  } else if (tag == "?") {
+      m_tag = &tag_non_plain_scalar;
+  } else {
+      m_tag = new std::string(tag);
+  }
+}
 
 void node_data::set_style(EmitterStyle::value style) { m_style = style; }
 
