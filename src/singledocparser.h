@@ -25,18 +25,17 @@ class SingleDocParser : private noncopyable {
 
  private:
   void HandleNode(EventHandler& eventHandler);
+  Token::TYPE HandleNodeOpen(EventHandler& eventHandler);
 
-  void HandleSequence(EventHandler& eventHandler);
   void HandleBlockSequence(EventHandler& eventHandler);
   void HandleFlowSequence(EventHandler& eventHandler);
 
-  void HandleMap(EventHandler& eventHandler);
   void HandleBlockMap(EventHandler& eventHandler);
   void HandleFlowMap(EventHandler& eventHandler);
   void HandleCompactMap(EventHandler& eventHandler);
   void HandleCompactMapWithNoKey(EventHandler& eventHandler);
 
-  void ParseProperties(std::string& tag, anchor_t& anchor);
+  bool ParseProperties(std::string& tag, anchor_t& anchor);
   void ParseTag(std::string& tag);
   void ParseAnchor(anchor_t& anchor);
 
