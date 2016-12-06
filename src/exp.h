@@ -13,10 +13,12 @@
 //#define TEST_INLINE __attribute__((noinline))
 //#define TEST_INLINE
 
+#define likely(x)       __builtin_expect(!!(x), 1)
+#define unlikely(x)       __builtin_expect(!!(x), 0)
+
 namespace YAML {
 
 namespace Exp {
-
 
 template <std::size_t A, std::size_t... B>
 struct static_sum  {
@@ -40,15 +42,10 @@ struct static_max<A, B, C...> {
         static_max<A, C...>::value : static_max<B, C...>::value;
 };
 
-
-#define likely(x)       __builtin_expect(!!(x), 1)
-#define unlikely(x)       __builtin_expect(!!(x), 0)
-
 template <char A>
 struct Char {
   template <std::size_t N>
-  REGEXP_INLINE static int match(std::array<char, N> source, const size_t pos) {
-      //return (source[pos] == A) ? 1 : -1;
+  REGEXP_INLINE static int match(Source<N> source, const size_t pos) {
       if (likely(source[pos] != A)) { return -1;  } else { return 1; }
   }
   static const std::size_t lookahead = 1;
@@ -57,7 +54,7 @@ struct Char {
 template <typename A, typename... B>
 struct OR {
   template <std::size_t N>
-  REGEXP_INLINE static int match(std::array<char, N> source, const size_t pos) {
+  REGEXP_INLINE static int match(Source<N> source, const size_t pos) {
     int match = A::match(source, pos);
     if (match >= 0) {
       return match;
@@ -70,7 +67,7 @@ struct OR {
 template <typename A>
 struct OR<A> {
   template <std::size_t N>
-  REGEXP_INLINE static int match(std::array<char, N> source, const size_t pos) {
+  REGEXP_INLINE static int match(Source<N> source, const size_t pos) {
     return A::match(source, pos);
   }
   static const std::size_t lookahead = A::lookahead;
@@ -79,7 +76,7 @@ struct OR<A> {
 template <typename A, typename... B>
 struct SEQ {
   template <std::size_t N>
-  REGEXP_INLINE static int match(std::array<char, N> source, const size_t pos) {
+  REGEXP_INLINE static int match(Source<N> source, const size_t pos) {
 
     int a = A::match(source, pos);
     if (a < 0) { return -1; }
@@ -95,7 +92,7 @@ struct SEQ {
 template <typename A>
 struct SEQ<A> {
   template <std::size_t N>
-  REGEXP_INLINE static int match(std::array<char, N> source, const size_t pos) {
+  REGEXP_INLINE static int match(Source<N> source, const size_t pos) {
     return A::match(source, pos);
   }
   static const std::size_t lookahead = A::lookahead;
@@ -105,7 +102,7 @@ struct SEQ<A> {
 template <typename A>
 struct NOT {
   template <std::size_t N>
-  REGEXP_INLINE static int match(std::array<char, N> source, const size_t pos) {
+  REGEXP_INLINE static int match(Source<N> source, const size_t pos) {
      return A::match(source, pos) >= 0 ? -1 : 1;
   }
   static const std::size_t lookahead = A::lookahead;
@@ -115,7 +112,7 @@ template <char A, char Z>
 struct Range {
   static_assert(A <= Z, "Invalid Range");
   template <std::size_t N>
-  REGEXP_INLINE static int match(std::array<char, N> source, const size_t pos) {
+  REGEXP_INLINE static int match(Source<N> source, const size_t pos) {
     return (source[pos] < A || source[pos] > Z) ? -1 : 1;
   }
   static const std::size_t lookahead = 1;
@@ -123,30 +120,27 @@ struct Range {
 
 struct Empty {
   template <std::size_t N>
-  REGEXP_INLINE static int match(std::array<char, N> source, const size_t pos) {
+  REGEXP_INLINE static int match(Source<N> source, const size_t pos) {
     return source[pos] == Stream::eof() ? 0 : -1;
   }
-  // REGEXP_INLINE static int match(const StringCharSource& source) {
-  //   // the empty regex only is successful on the empty string
-  //   // return c == '\0' ? 0 : -1;
-  //   return !source ? 0 : -1;
-  // }
   static const std::size_t lookahead = 1;
 };
+
 template <typename E>
 struct Matcher {
 
   static const std::size_t lookahead = E::lookahead;
 
   template <std::size_t N>
-  TEST_INLINE static int Match(std::array<char, N> source) {
+  TEST_INLINE static int Match(Source<N> source) {
     // return IsValidSource(source) ? Exp::match(source, source[0]) : -1;
     static_assert(N >= E::lookahead, "Passing too small matcher source ");
+
     return E::match(source, 0);
   }
 
   template <std::size_t N>
-  TEST_INLINE static int Matches(std::array<char, N> source) {
+  TEST_INLINE static int Matches(Source<N> source) {
     return !(likely(Match(source) < 0));
   }
 
@@ -159,7 +153,7 @@ struct Matcher {
   }
 
   TEST_INLINE static int Match(const StringCharSource& str) {
-    std::array<char, lookahead> source;
+    Source<lookahead> source;
 
     for (size_t i = 0; i < lookahead; i++) {
         source[i] = str[i];
@@ -173,7 +167,7 @@ struct Matcher {
   }
 
   TEST_INLINE static int Match(const std::string& str) {
-    std::array<char, lookahead> source;
+      Source<lookahead> source;
 
     for (size_t i = 0; i < std::min(source.size(), str.size()); i++) {
         source[i] = str[i];
@@ -186,7 +180,7 @@ struct Matcher {
   }
 
   TEST_INLINE static bool Matches(const std::string& str) {
-    std::array<char, lookahead> source;
+    Source<lookahead> source;
 
     for (size_t i = 0; i < std::min(source.size(), str.size()); i++) {
         source[i] = str[i];
@@ -199,7 +193,7 @@ struct Matcher {
   }
 
   TEST_INLINE static bool Matches(char ch) {
-    std::array<char, lookahead> source;
+    Source<lookahead> source;
     source[0] = ch;
     if (lookahead > 1) {
         source[1] = Stream::eof();
