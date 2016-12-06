@@ -37,7 +37,7 @@ void EmitFromEvents::OnAlias(const Mark&, anchor_t anchor) {
 }
 
 void EmitFromEvents::OnScalar(const Mark&, const std::string& tag,
-                              anchor_t anchor, const std::string& value) {
+                              anchor_t anchor, std::string value) {
   BeginNode();
   EmitProps(tag, anchor);
   m_emitter << value;

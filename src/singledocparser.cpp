@@ -53,11 +53,12 @@ void SingleDocParser::HandleNode(EventHandler& eventHandler) {
     return;
   }
 
+  const Token& first = m_scanner.peek();
   // save location
-  Mark mark = m_scanner.peek().mark;
+  Mark mark = first.mark;
 
   // special case: a value node by itself must be a map, with no header
-  if (m_scanner.peek().type == Token::VALUE) {
+  if (first.type == Token::VALUE) {
     eventHandler.OnMapStart(mark, "?", NullAnchor, EmitterStyle::Default);
     HandleMap(eventHandler);
     eventHandler.OnMapEnd();
@@ -65,8 +66,8 @@ void SingleDocParser::HandleNode(EventHandler& eventHandler) {
   }
 
   // special case: an alias node
-  if (m_scanner.peek().type == Token::ALIAS) {
-    eventHandler.OnAlias(mark, LookupAnchor(mark, m_scanner.peek().value));
+  if (first.type == Token::ALIAS) {
+    eventHandler.OnAlias(mark, LookupAnchor(mark, first.value));
     m_scanner.pop_unsafe();
     return;
   }
@@ -75,7 +76,7 @@ void SingleDocParser::HandleNode(EventHandler& eventHandler) {
   anchor_t anchor;
   ParseProperties(tag, anchor);
 
-  const Token& token = m_scanner.peek();
+  Token& token = m_scanner.peek();
 
   if (token.type == Token::PLAIN_SCALAR && IsNullString(token.value)) {
     eventHandler.OnNull(mark, anchor);
@@ -91,7 +92,7 @@ void SingleDocParser::HandleNode(EventHandler& eventHandler) {
   switch (token.type) {
     case Token::PLAIN_SCALAR:
     case Token::NON_PLAIN_SCALAR:
-      eventHandler.OnScalar(mark, tag, anchor, token.value);
+      eventHandler.OnScalar(mark, tag, anchor, std::move(token.value));
       m_scanner.pop_unsafe();
       return;
     case Token::FLOW_SEQ_START:
