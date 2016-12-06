@@ -103,14 +103,14 @@ inline node* node_data::get(const Key& key, shared_memory pMemory) const {
     case NodeType::Null:
       return NULL;
     case NodeType::Sequence:
-      if (node* pNode = get_idx<Key>::get(m_sequence, key, pMemory))
+      if (node* pNode = get_idx<Key>::get(seq(), key, pMemory))
         return pNode;
       return NULL;
     case NodeType::Scalar:
       throw BadSubscript();
   }
 
-  for (node_map::const_iterator it = m_map.begin(); it != m_map.end(); ++it) {
+  for (node_map::const_iterator it = map().begin(); it != map().end(); ++it) {
     if (it->first->equals(key, pMemory)) {
       return it->second;
     }
@@ -121,24 +121,24 @@ inline node* node_data::get(const Key& key, shared_memory pMemory) const {
 
 template <typename Key>
 inline node& node_data::get(const Key& key, shared_memory pMemory) {
+
   switch (m_type) {
     case NodeType::Map:
       break;
     case NodeType::Undefined:
     case NodeType::Null:
+      set_type(NodeType::Sequence);
     case NodeType::Sequence:
-      if (node* pNode = get_idx<Key>::get(m_sequence, key, pMemory)) {
-        m_type = NodeType::Sequence;
+      if (node* pNode = get_idx<Key>::get(seq(), key, pMemory)) {
         return *pNode;
       }
-
       convert_to_map(pMemory);
       break;
     case NodeType::Scalar:
       throw BadSubscript();
   }
 
-  for (node_map::const_iterator it = m_map.begin(); it != m_map.end(); ++it) {
+  for (node_map::const_iterator it = map().begin(); it != map().end(); ++it) {
     if (it->first->equals(key, pMemory)) {
       return *it->second;
     }
@@ -153,12 +153,12 @@ inline node& node_data::get(const Key& key, shared_memory pMemory) {
 template <typename Key>
 inline bool node_data::remove(const Key& key, shared_memory pMemory) {
   if (m_type == NodeType::Sequence) {
-    return remove_idx<Key>::remove(m_sequence, key);
+    return remove_idx<Key>::remove(seq(), key);
   } else if (m_type == NodeType::Map) {
 
-    for (node_map::iterator iter = m_map.begin(); iter != m_map.end(); ++iter) {
+    for (node_map::iterator iter = map().begin(); iter != map().end(); ++iter) {
       if (iter->first->equals(key, pMemory)) {
-        m_map.erase(iter);
+        map().erase(iter);
         return true;
       }
     }
