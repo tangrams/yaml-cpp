@@ -12,7 +12,9 @@ enum FOLD { DONT_FOLD, FOLD_BLOCK, FOLD_FLOW };
 
 struct ScanScalarParams {
   ScanScalarParams()
-    :   eatEnd(false),
+    :   end(nullptr),
+        indentFn(nullptr),
+        eatEnd(false),
         indent(0),
         detectIndent(false),
         eatLeadingWhitespace(0),
@@ -27,6 +29,7 @@ struct ScanScalarParams {
   // input:
   //std::function<int(const Stream& in)> end;   // what condition ends this scalar?
   int (*end)(const Exp::StreamSource& in);   // what condition ends this scalar?
+  int (*indentFn)(const Exp::StreamSource& in);   // what condition ends this scalar?
 
   bool eatEnd;        // should we eat that condition when we see it?
   int indent;         // what level of indentation should be eaten and ignored?

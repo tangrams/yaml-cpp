@@ -180,7 +180,7 @@ class Scanner {
   static int MatchScalarDoubleQuoted(const Exp::StreamSource& in);
   static int MatchScalarEnd(const Exp::StreamSource& in);
   static int MatchScalarEndInFlow(const Exp::StreamSource& in);
-  static bool MatchDocIndicator(const Exp::StreamSource& in);
+  static int MatchScalarIndent(const Exp::StreamSource& in);
 
  private:
   // the stream
