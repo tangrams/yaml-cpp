@@ -106,20 +106,6 @@ void Scanner::ScanNextToken() {
   }
   char c = INPUT.peek();
 
-  if (INPUT.column() == 0) {
-    if (c == Keys::Directive) {
-      return ScanDirective();
-    }
-
-    // document token
-    if (Exp::DocStart::Matches(INPUT)) {
-        return ScanDocStart();
-    }
-
-    if (Exp::DocEnd::Matches(INPUT)) {
-        return ScanDocEnd();
-    }
-  }
   // flow start/end/entry
   if (c == Keys::FlowSeqStart ||
       c == Keys::FlowMapStart) {
@@ -135,22 +121,40 @@ void Scanner::ScanNextToken() {
     return ScanFlowEntry();
   }
 
+  // Get large enough lookahead buffer for all Matchers
+  auto input = INPUT.LookaheadBuffer(5);
+
+  if (INPUT.column() == 0) {
+    if (c == Keys::Directive) {
+      return ScanDirective();
+    }
+
+    // document token
+    if (Exp::DocStart::Matches(input)) {
+        return ScanDocStart();
+    }
+
+    if (Exp::DocEnd::Matches(input)) {
+        return ScanDocEnd();
+    }
+  }
+
   // block/map stuff
-  if (Exp::BlockEntry::Matches(INPUT)) {
+  if (Exp::BlockEntry::Matches(input)) {
     return ScanBlockEntry();
   }
 
   if (InBlockContext() ?
       // TODO these are the same?
-      Exp::Key::Matches(INPUT) :
-      Exp::KeyInFlow::Matches(INPUT)) {
+      Exp::Key::Matches(input) :
+      Exp::KeyInFlow::Matches(input)) {
     return ScanKey();
   }
 
-  if ((InBlockContext() && Exp::Value::Matches(INPUT)) ||
+  if ((InBlockContext() && Exp::Value::Matches(input)) ||
       (m_canBeJSONFlow ?
-       Exp::ValueInJSONFlow::Matches(INPUT) :
-       Exp::ValueInFlow::Matches(INPUT))) {
+       Exp::ValueInJSONFlow::Matches(input) :
+       Exp::ValueInFlow::Matches(input))) {
     return ScanValue();
   }
 
@@ -175,11 +179,11 @@ void Scanner::ScanNextToken() {
     return ScanQuotedScalar();
   }
 
-  if (Exp::PlainScalarCommon::Matches(INPUT)) {
+  if (Exp::PlainScalarCommon::Matches(input)) {
     // plain scalars
     if (InBlockContext() ?
-      Exp::PlainScalar::Matches(INPUT) :
-      Exp::PlainScalarInFlow::Matches(INPUT)) {
+        Exp::PlainScalar::Matches(input) :
+        Exp::PlainScalarInFlow::Matches(input)) {
       return ScanPlainScalar();
     }
   }

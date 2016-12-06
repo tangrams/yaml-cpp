@@ -28,9 +28,12 @@ int Scanner::MatchScalarEnd(const Stream& in) {
   using namespace Exp;
   using ScalarEnd = Matcher<
       OR < SEQ < Char<':'>,
-                 OR < detail::BlankOrBreak,
-                      Empty >>,
-           SEQ < detail::BlankOrBreak,
+                 detail::BlankOrBreak>,
+           SEQ < Char<':'>,
+                 Empty >,
+           SEQ < detail::Blank,
+                 detail::Comment>,
+           SEQ < detail::Break,
                  detail::Comment>>>;
 
   return ScalarEnd::Match(in);
@@ -40,10 +43,11 @@ int Scanner::MatchScalarEndInFlow(const Stream& in) {
   using namespace Exp;
   using ScalarEndInFlow = Matcher <
       OR < SEQ < Char<':'>,
-                 OR < detail::BlankOrBreak,
+                 OR < detail::Blank,
                       Char<','>,
                       Char<']'>,
                       Char<'}'>,
+                      detail::Break,
                       Empty >>,
            Char<','>,
            Char<'?'>,
@@ -108,11 +112,6 @@ std::string Scanner::ScanScalar(ScanScalarParams& params) {
 
     while (1) {
 
-      // find end posiion
-      if (params.end(INPUT) >= 0) {
-        break;
-      }
-
       if (!INPUT) {
         break;
       }
@@ -120,16 +119,21 @@ std::string Scanner::ScanScalar(ScanScalarParams& params) {
       // find break posiion
       char ch = INPUT.peek();
 
-      bool isWhiteSpace = (ch == ' ' || ch == '\t');
+      bool isWhiteSpace = Exp::Blank::Matches(INPUT);
 
       if (!isWhiteSpace) {
-          if (ch == '\n' || (ch == '\r' && Exp::Break::Matches(INPUT))) {
+          if (Exp::Break::Matches(INPUT)) {
               break;
           }
           // document indicator?
           if (INPUT.column() == 0 && CheckDocIndicator(INPUT, params)) {
               break;
           }
+      }
+
+      // find end posiion
+      if (params.end(INPUT) >= 0) {
+          break;
       }
 
       foundNonEmptyLine = true;
@@ -199,9 +203,10 @@ std::string Scanner::ScanScalar(ScanScalarParams& params) {
 
     // first the required indentation
     while (INPUT.peek() == ' ' &&
-           (INPUT.column() < params.indent ||
-            (params.detectIndent && !foundNonEmptyLine)) &&
-           !(params.end(INPUT) >= 0)) {
+           (INPUT.column() < params.indent || (params.detectIndent && !foundNonEmptyLine))) {
+
+      if (params.end(INPUT) >= 0) { break; }
+
       INPUT.eat();
     }
 
