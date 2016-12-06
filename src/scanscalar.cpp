@@ -195,9 +195,8 @@ std::string Scanner::ScanScalar(ScanScalarParams& params) {
 
     // ********************************
     // Phase #2: eat line ending
-    if (int n = Exp::Break::Match(INPUT)) {
-        INPUT.eat(n);
-    }
+    assert(INPUT.EatLineBreak());
+
     // ********************************
     // Phase #3: scan initial spaces
 
