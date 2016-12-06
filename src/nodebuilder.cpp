@@ -41,9 +41,9 @@ void NodeBuilder::OnAlias(const Mark& /* mark */, anchor_t anchor) {
 }
 
 void NodeBuilder::OnScalar(const Mark& mark, const std::string& tag,
-                           anchor_t anchor, const std::string& value) {
+                           anchor_t anchor, std::string value) {
   detail::node& node = Push(mark, anchor);
-  node.set_scalar(value);
+  node.set_scalar(std::move(value));
   node.set_tag(tag);
   Pop();
 }

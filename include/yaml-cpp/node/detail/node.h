@@ -72,6 +72,10 @@ class node {
     mark_defined();
     m_pRef->set_scalar(scalar);
   }
+  void set_scalar(std::string&& scalar) {
+    mark_defined();
+    m_pRef->set_scalar(std::move(scalar));
+  }
   void set_tag(const std::string& tag) {
     mark_defined();
     m_pRef->set_tag(tag);

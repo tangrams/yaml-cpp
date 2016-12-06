@@ -13,7 +13,7 @@ class MockEventHandler : public EventHandler {
   MOCK_METHOD2(OnNull, void(const Mark&, anchor_t));
   MOCK_METHOD2(OnAlias, void(const Mark&, anchor_t));
   MOCK_METHOD4(OnScalar, void(const Mark&, const std::string&, anchor_t,
-                              const std::string&));
+                              std::string));
 
   MOCK_METHOD4(OnSequenceStart, void(const Mark&, const std::string&, anchor_t,
                                      EmitterStyle::value));
