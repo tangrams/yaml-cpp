@@ -288,12 +288,15 @@ void Scanner::ScanPlainScalar() {
   ScanScalarParams params;
   if (InFlowContext()) {
       params.end = MatchScalarEndInFlow;
+      params.indent = 0;
+      params.indentFn = MatchScalarIndent;
   } else {
       params.end = MatchScalarEnd;
+      params.indent = GetTopIndent() + 1;
+      params.indentFn = MatchScalarIndent;
   }
 
   params.eatEnd = false;
-  params.indent = (InFlowContext() ? 0 : GetTopIndent() + 1);
   params.fold = FOLD_FLOW;
   params.eatLeadingWhitespace = true;
   params.trimTrailingSpaces = true;
@@ -333,6 +336,7 @@ void Scanner::ScanQuotedScalar() {
   } else {
       params.end = MatchScalarDoubleQuoted;
   }
+
   params.eatEnd = true;
   params.escape = (single ? '\'' : '\\');
   params.indent = 0;

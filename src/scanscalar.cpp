@@ -57,13 +57,49 @@ int Scanner::MatchScalarEndInFlow(const Exp::StreamSource& in) {
   return ScalarEndInFlow::Match(in);
 }
 
-bool Scanner::MatchDocIndicator(const Exp::StreamSource& in) {
+int Scanner::MatchScalarIndent(const Exp::StreamSource& in) {
+  using namespace Exp;
+  using ScalarEndInFlow = Matcher <
+      SEQ < detail::Blank,
+            detail::Comment>>;
+
+  return ScalarEndInFlow::Match(in);
+}
+
+static bool MatchDocIndicator(const Exp::StreamSource& in) {
  using namespace Exp;
  using DocIndicator = Matcher<OR <detail::DocStart, detail::DocEnd>>;
 
  return DocIndicator::Matches(in);
 }
 
+
+struct ScanResult {
+  bool foundNonEmptyLine = false;
+  bool escapedNewline = false;
+  int endMatch = -1;
+  std::size_t lastNonWhitespaceChar;
+  std::size_t lastEscapedChar = std::string::npos;
+};
+
+static void EatToIndentation(Stream& INPUT, ScanScalarParams& params, bool foundEmptyLine);
+
+static void EatAfterIndentation(Stream& INPUT, ScanScalarParams& params);
+
+static void PostProcess(std::string& scalar, ScanScalarParams& params, size_t lastEscapedChar);
+
+static int HandleFolding(std::string& scalar, const ScanScalarParams& params,
+                         int column, bool escapedNewline,
+                         bool emptyLine, bool moreIndented,
+                         bool nextEmptyLine, bool nextMoreIndented,
+                         bool foundNonEmptyLine,
+                         bool foldedNewlineStartedMoreIndented,
+                         int foldedNewlineCount);
+
+static void ScanLine(Stream& INPUT, const ScanScalarParams& params,
+                     std::string& scalar, ScanResult& out);
+//#define TEST_NO_INLINE __attribute__((noinline))
+#define TEST_NO_INLINE
 
 // ScanScalar
 // . This is where the scalar magic happens.
@@ -76,16 +112,16 @@ bool Scanner::MatchDocIndicator(const Exp::StreamSource& in) {
 // . Depending on the parameters given, we store or stop
 //   and different places in the above flow.
 std::string Scanner::ScanScalar(ScanScalarParams& params) {
-  bool foundNonEmptyLine = false;
-  bool pastOpeningBreak = (params.fold == FOLD_FLOW);
-  bool emptyLine = false, moreIndented = false;
-  int foldedNewlineCount = 0;
-  bool foldedNewlineStartedMoreIndented = false;
-  std::size_t lastEscapedChar = std::string::npos;
 
-  // std::string& scalar = m_scalarBuffer;
-  // scalar.clear();
+  bool emptyLine = false;
+  bool moreIndented = false;
+  bool foldedNewlineStartedMoreIndented = false;
+  bool pastOpeningBreak = (params.fold == FOLD_FLOW);
+
+  int foldedNewlineCount = 0;
   std::string scalar;
+
+  ScanResult r;
 
   params.leadingSpaces = false;
 
@@ -93,99 +129,39 @@ std::string Scanner::ScanScalar(ScanScalarParams& params) {
     // ********************************
     // Phase #1: scan until line ending
 
-    bool escapedNewline = false;
-    std::size_t lastNonWhitespaceChar = scalar.size();
-
-    while (1) {
-
-      if (!INPUT) {
-        break;
-      }
-
-      // find break posiion
-      auto& input = INPUT.LookaheadBuffer(4);
-
-      bool isWhiteSpace = Exp::Blank::Matches(input);
-
-      if (!isWhiteSpace) {
-          if (Exp::Break::Matches(input)) {
-              break;
-          }
-          // document indicator?
-          if (INPUT.column() == 0) {
-              if (MatchDocIndicator(input)) {
-                  if (params.onDocIndicator == BREAK) {
-                      break;
-                  } else if (params.onDocIndicator == THROW) {
-                      throw ParserException(INPUT.mark(), ErrorMsg::DOC_IN_SCALAR);
-                  }
-              }
-          }
-      }
-
-      // find end posiion
-      if (params.end(input) >= 0) {
-        break;
-      }
-
-      foundNonEmptyLine = true;
-      pastOpeningBreak = true;
-
-      char ch = INPUT.peek();
-      if (likely(params.escape != ch)) {
-        // just add the character
-        scalar += ch;
-        INPUT.eat();
-
-        if (!isWhiteSpace) {
-          lastNonWhitespaceChar = scalar.size();
-        }
-
-      } else {
-        // escaped newline? (only if we're escaping on slash)
-        if (params.escape == '\\' && Exp::EscBreak::Matches(input)) {
-          // eat escape character and get out (but preserve trailing whitespace!)
-          INPUT.eat();
-          lastEscapedChar = lastNonWhitespaceChar = scalar.size();
-          escapedNewline = true;
-          break;
-
-        } else {
-          scalar += Exp::Escape(INPUT);
-          lastEscapedChar = lastNonWhitespaceChar = scalar.size();
-        }
-      }
-    } // end while(1)
+    ScanLine(INPUT, params, scalar, r);
+    pastOpeningBreak |= r.foundNonEmptyLine;
 
     // eof? if we're looking to eat something, then we throw
     if (!INPUT) {
       if (params.eatEnd) {
         throw ParserException(INPUT.mark(), ErrorMsg::EOF_IN_SCALAR);
       }
-      break; // while (INPUT)
+      break;
     }
 
-    auto& input = INPUT.LookaheadBuffer(4);
-
     // doc indicator?
-    if (params.onDocIndicator == BREAK &&
-        INPUT.column() == 0 &&
-        MatchDocIndicator(input)) {
-      break; // while (INPUT)
+    if (params.onDocIndicator == BREAK && INPUT.column() == 0) {
+      auto& input = INPUT.LookaheadBuffer(4);
+      if (MatchDocIndicator(input)) {
+        break;
+      }
     }
 
     // are we done via character match?
-    if (int n = params.end(input) >= 0) {
+    if (r.endMatch >= 0) {
       if (params.eatEnd) {
-        INPUT.eat(n);
+        INPUT.eat(r.endMatch);
       }
-      break; // while (INPUT)
+      break;
     }
 
     // do we remove trailing whitespace?
-    if (params.fold == FOLD_FLOW)
-      scalar.erase(lastNonWhitespaceChar);
-
+    if (params.fold == FOLD_FLOW) {
+      if (r.lastNonWhitespaceChar < scalar.size()) {
+        scalar.erase(r.lastNonWhitespaceChar);
+      }
+    }
     // ********************************
     // Phase #2: eat line ending
     INPUT.EatLineBreak();
@@ -193,81 +169,33 @@ std::string Scanner::ScanScalar(ScanScalarParams& params) {
     // ********************************
     // Phase #3: scan initial spaces
 
-    // first the required indentation
-    while (INPUT.peek() == ' ' &&
-           (INPUT.column() < params.indent || (params.detectIndent && !foundNonEmptyLine))) {
-      // which matcher applies here ?
-      // EndScalar / EndScalarInFlow
-      auto& input = INPUT.LookaheadBuffer(4);
-      if (params.end(input) >= 0) { break; }
-
-      INPUT.eat();
-    }
+    EatToIndentation(INPUT, params, !r.foundNonEmptyLine);
 
     // update indent if we're auto-detecting
-    if (params.detectIndent && !foundNonEmptyLine) {
+    if (params.detectIndent && !r.foundNonEmptyLine) {
       params.indent = std::max(params.indent, INPUT.column());
     }
 
     // and then the rest of the whitespace
-    for (char c = INPUT.peek(); (c == ' ' || c == '\t'); c = INPUT.peek()) {
-      // we check for tabs that masquerade as indentation
-      if (c == '\t' && INPUT.column() < params.indent &&
-          params.onTabInIndentation == THROW) {
-        throw ParserException(INPUT.mark(), ErrorMsg::TAB_IN_INDENTATION);
-      }
-
-      if (!params.eatLeadingWhitespace) {
-        break;
-      }
-      auto& input = INPUT.LookaheadBuffer(4);
-      if (params.end(input) >= 0) {
-        break;
-      }
-
-      INPUT.eat();
+    if (INPUT.peek() == ' ' || INPUT.peek() == '\t') {
+      EatAfterIndentation(INPUT, params);
     }
 
     // was this an empty line?
-    bool nextEmptyLine = Exp::Break::Matches(INPUT);
-    bool nextMoreIndented = Exp::Blank::Matches(INPUT);
+    auto& input = INPUT.LookaheadBuffer(4);
+    bool nextEmptyLine = Exp::Break::Matches(input);
+    bool nextMoreIndented = Exp::Blank::Matches(input);
     if (params.fold == FOLD_BLOCK && foldedNewlineCount == 0 && nextEmptyLine)
       foldedNewlineStartedMoreIndented = moreIndented;
 
-    // for block scalars, we always start with a newline, so we should ignore it
-    // (not fold or keep)
     if (pastOpeningBreak) {
-      switch (params.fold) {
-        case DONT_FOLD:
-          scalar += '\n';
-          break;
-        case FOLD_BLOCK:
-          if (!emptyLine && !nextEmptyLine && !moreIndented &&
-              !nextMoreIndented && INPUT.column() >= params.indent) {
-            scalar += ' ';
-          } else if (nextEmptyLine) {
-            foldedNewlineCount++;
-          } else {
-            scalar += '\n';
-          }
-
-          if (!nextEmptyLine && foldedNewlineCount > 0) {
-            scalar += std::string(foldedNewlineCount - 1, '\n');
-            if (foldedNewlineStartedMoreIndented ||
-                nextMoreIndented | !foundNonEmptyLine) {
-              scalar += '\n';
-            }
-            foldedNewlineCount = 0;
-          }
-          break;
-        case FOLD_FLOW:
-          if (nextEmptyLine) {
-            scalar += '\n';
-          } else if (!emptyLine && !escapedNewline) {
-            scalar += ' ';
-          }
-          break;
-      }
+      foldedNewlineCount = HandleFolding(scalar, params, INPUT.column(),
+                                         r.escapedNewline,
+                                         emptyLine, moreIndented,
+                                         nextEmptyLine, nextMoreIndented,
+                                         r.foundNonEmptyLine,
+                                         foldedNewlineStartedMoreIndented,
+                                         foldedNewlineCount);
     }
 
     emptyLine = nextEmptyLine;
@@ -277,13 +205,235 @@ std::string Scanner::ScanScalar(ScanScalarParams& params) {
     // are we done via indentation?
     if (!emptyLine && INPUT.column() < params.indent) {
       params.leadingSpaces = true;
-      break; // while (INPUT)
+      break;
     }
-  } // end while(INPUT)
+  }
 
+  PostProcess(scalar, params, r.lastEscapedChar);
+
+  return scalar;
+}
+
+
+TEST_NO_INLINE
+static void ScanLine(Stream& INPUT, const ScanScalarParams& params,
+                           std::string& scalar, ScanResult& out) {
+
+  const size_t bufferSize = 256;
+  char buffer[bufferSize];
+  size_t bufferFill = 0;
+  size_t scalarLength = scalar.length();
+
+  out.lastNonWhitespaceChar = scalarLength;
+  out.escapedNewline = false;
+
+  while (INPUT) {
+
+    // find break posiion
+    Exp::StreamSource input = INPUT.LookaheadBuffer(4);
+
+    // space 0x20 : 0010000ß
+    // tab   0x09 : 00001001
+    // LF    0x0A : 00001010
+    // CR    0x0D : 00001101
+    bool isWhiteSpace = false;
+
+    if ((input[0] & 0x28) != 0) {
+      isWhiteSpace = Exp::Blank::Matches(input);
+      if (!isWhiteSpace) {
+        if (Exp::Break::Matches(input)) {
+          break;
+        }
+        // document indicator?
+        if (unlikely(INPUT.column() == 0) &&
+            MatchDocIndicator(input)) {
+
+          if (params.onDocIndicator == BREAK) {
+            break;
+          } else if (params.onDocIndicator == THROW) {
+            throw ParserException(INPUT.mark(), ErrorMsg::DOC_IN_SCALAR);
+          }
+        }
+      }
+    }
+
+    // keep end posiion
+    if ((out.endMatch = params.end(input)) >= 0) {
+      break;
+    }
+
+    out.foundNonEmptyLine = true;
+
+    if (likely(params.escape != input[0])) {
+      // just add the character
+      if (unlikely(bufferFill == bufferSize)) {
+        scalar.insert(scalar.size(), buffer, bufferSize);
+        bufferFill = 0;
+      }
+
+      buffer[bufferFill++] = input[0];
+
+      scalarLength++;
+
+      INPUT.eat();
+
+      if (!isWhiteSpace) {
+        out.lastNonWhitespaceChar = scalarLength;
+      }
+
+    } else {
+      // escaped newline? (only if we're escaping on slash)
+      if (params.escape == '\\' && Exp::EscBreak::Matches(input)) {
+        // eat escape character and get out (but preserve trailing whitespace!)
+        INPUT.eat();
+        out.lastEscapedChar = out.lastNonWhitespaceChar = scalarLength;
+        out.escapedNewline = true;
+        break;
+
+      } else {
+        if (bufferFill > 0) {
+          scalar.insert(scalar.size(), buffer, bufferFill);
+          bufferFill = 0;
+        }
+
+        scalar += Exp::Escape(INPUT);
+        scalarLength = scalar.size();
+
+        out.lastEscapedChar = out.lastNonWhitespaceChar = scalarLength;
+      }
+    }
+  }
+
+  if (bufferFill > 0) {
+    scalar.insert(scalar.size(), buffer, bufferFill);
+  }
+}
+
+TEST_NO_INLINE
+static void EatToIndentation(Stream& INPUT, ScanScalarParams& params, bool foundEmptyLine) {
+
+  using namespace Exp;
+
+  using _ = Char<' '>;
+
+  using SpaceInvaders = Matcher<Count<_,_,_,_,_,_,_,_>>;
+
+  // first the required indentation
+  // This can be:
+  // - BlockScalar (detectIndent/colum<indent)
+  // - PlainScalar (colum<indent) /
+  int max = params.indent - INPUT.column();
+  if (params.detectIndent && foundEmptyLine) {
+    max = std::numeric_limits<int>::max();
+  }
+
+  // Don't eat the whitespace before comments
+  while (max > 0) {
+
+    size_t lookahead = std::min(std::max(2, max), 8);
+
+    auto& input = INPUT.LookaheadBuffer(lookahead);
+
+    int pos = SpaceInvaders::Match(input);
+
+    // No, nothing to eat!
+    if (pos == 0) { break; }
+
+    // Pos can be up to 8. Dont eat before potential comment.
+    if (params.indentFn && (pos == 8 || input[pos] == '#')) {
+      pos -= 1;
+    }
+    if (max < pos) { pos = max; }
+
+    // Eat spaces
+    for (int i = 0; i < pos; i++) {
+      INPUT.eat();
+    }
+
+    if (pos < 7 || input[7] != ' ') {
+      break;
+    }
+    max -= pos;
+  }
+}
+
+TEST_NO_INLINE
+static void EatAfterIndentation(Stream& INPUT, ScanScalarParams& params) {
+
+  for (char c = INPUT.peek(); (c == ' ' || c == '\t'); c = INPUT.peek()) {
+    // we check for tabs that masquerade as indentation
+    if (c == '\t' && INPUT.column() < params.indent &&
+        params.onTabInIndentation == THROW) {
+      throw ParserException(INPUT.mark(), ErrorMsg::TAB_IN_INDENTATION);
+    }
+
+    if (!params.eatLeadingWhitespace) {
+      break;
+    }
+    auto& input = INPUT.LookaheadBuffer(2);
+    if (params.indentFn && params.indentFn(input) >= 0) {
+      break;
+    }
+    //printf("check 2\n");
+
+    INPUT.eat();
+  }
+}
+
+TEST_NO_INLINE
+static int HandleFolding(std::string& scalar,
+                         const ScanScalarParams& params,
+                         int column, bool escapedNewline,
+                         bool emptyLine, bool moreIndented,
+                         bool nextEmptyLine, bool nextMoreIndented,
+                         bool foundNonEmptyLine,
+                         bool foldedNewlineStartedMoreIndented,
+                         int foldedNewlineCount) {
+
+  // for block scalars, we always start with a newline, so we should ignore it
+  // (not fold or keep)
+  switch (params.fold) {
+    case DONT_FOLD:
+      scalar += '\n';
+      break;
+    case FOLD_BLOCK:
+      if (!emptyLine && !nextEmptyLine && !moreIndented &&
+          !nextMoreIndented && column >= params.indent) {
+        scalar += ' ';
+      } else if (nextEmptyLine) {
+        foldedNewlineCount++;
+      } else {
+        scalar += '\n';
+      }
+
+      if (!nextEmptyLine && foldedNewlineCount > 0) {
+        scalar += std::string(foldedNewlineCount - 1, '\n');
+        if (foldedNewlineStartedMoreIndented ||
+            nextMoreIndented | !foundNonEmptyLine) {
+          scalar += '\n';
+        }
+        foldedNewlineCount = 0;
+      }
+      break;
+    case FOLD_FLOW:
+      if (nextEmptyLine) {
+        scalar += '\n';
+      } else if (!emptyLine && !escapedNewline) {
+        scalar += ' ';
+      }
+      break;
+  }
+  return foldedNewlineCount;
+}
+
+TEST_NO_INLINE
+static void PostProcess(std::string& scalar, ScanScalarParams& params, size_t lastEscapedChar) {
   // post-processing
   if (params.trimTrailingSpaces) {
-    std::size_t pos = scalar.find_last_not_of(' ');
+    std::size_t pos = scalar.size()-1;
+    while (pos != std::string::npos && scalar[pos] == ' ') { pos--; }
+    //std::size_t pos = scalar.find_last_not_of(' ');
+
     if (lastEscapedChar != std::string::npos) {
       if (pos < lastEscapedChar || pos == std::string::npos) {
         pos = lastEscapedChar;
@@ -324,7 +474,6 @@ std::string Scanner::ScanScalar(ScanScalarParams& params) {
     default:
       break;
   }
-
-  return scalar;
 }
+
 }
