@@ -2,6 +2,7 @@
 
 #include "yaml-cpp/noncopyable.h"
 #include "yaml-cpp/mark.h"
+#include "streamcharsource.h"
 #include <cstddef>
 #include <deque>
 #include <vector>
@@ -65,7 +66,7 @@ class Stream : private noncopyable {
   // Must be large enough for all regexp we use
   static constexpr size_t lookahead_elements = 8;
 
-  const std::array<char, lookahead_elements>& LookaheadBuffer(int lookahead) const {
+  const Exp::StreamSource& LookaheadBuffer(int lookahead) const {
 
     int offset = m_mark.pos - m_lookahead.streamPos;
     if (offset == 0 && m_lookahead.available >= lookahead) {
@@ -92,7 +93,7 @@ class Stream : private noncopyable {
   enum CharacterSet { utf8, utf16le, utf16be, utf32le, utf32be };
 
   mutable struct {
-    std::array<char, lookahead_elements> buffer;
+    Exp::StreamSource buffer;
     int available = 0;
     int streamPos = 0;
   } m_lookahead;
