@@ -16,27 +16,28 @@ struct Token {
   // enums
   enum STATUS { VALID, INVALID, UNVERIFIED };
   enum TYPE {
+    NONE = 0,
+    PLAIN_SCALAR = 1,
+    NON_PLAIN_SCALAR,
+    FLOW_SEQ_START,
+    BLOCK_SEQ_START,
+    FLOW_MAP_START,
+    BLOCK_MAP_START,
+    KEY,
+    VALUE,
     DIRECTIVE,
     DOC_START,
     DOC_END,
-    BLOCK_SEQ_START,
-    BLOCK_MAP_START,
     BLOCK_SEQ_END,
     BLOCK_MAP_END,
     BLOCK_ENTRY,
-    FLOW_SEQ_START,
-    FLOW_MAP_START,
     FLOW_SEQ_END,
     FLOW_MAP_END,
     FLOW_MAP_COMPACT,
     FLOW_ENTRY,
-    KEY,
-    VALUE,
     ANCHOR,
     ALIAS,
     TAG,
-    PLAIN_SCALAR,
-    NON_PLAIN_SCALAR
   };
 
   // data
