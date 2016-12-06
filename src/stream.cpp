@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "stream.h"
+#include "streamcharsource.h"
 
 #ifndef YAML_PREFETCH_SIZE
 #define YAML_PREFETCH_SIZE 8192
@@ -9,6 +10,8 @@
 
 #define S_ARRAY_SIZE(A) (sizeof(A) / sizeof(*(A)))
 #define S_ARRAY_END(A) ((A) + S_ARRAY_SIZE(A))
+
+#define likely(x)       __builtin_expect(!!(x), 1)
 
 #define CP_REPLACEMENT_CHARACTER (0xFFFD)
 
@@ -206,6 +209,12 @@ Stream::Stream(const std::string& input)
 
     m_charSet = utf8;
     ReadAheadTo(0);
+
+    if (m_readaheadSize > 0) {
+      m_char = m_buffer[0];
+    } else {
+      m_char = Stream::eof();
+    }
 }
 
 Stream::Stream(std::istream& input)
@@ -261,34 +270,21 @@ Stream::Stream(std::istream& input)
   }
 
   ReadAheadTo(0);
+
+  if (m_readaheadSize > 0) {
+    m_char = m_buffer[0];
+  } else {
+    m_char = Stream::eof();
+  }
 }
 
 Stream::~Stream() { delete[] m_pPrefetched; }
-
-// char Stream::peek() const {
-//   if (m_readahead.empty()) {
-//     return Stream::eof();
-//   }
-//   return m_readahead[0];
-// }
-
-// Stream::operator bool() const {
-//   // return m_input.good() ||
-//   //        (!m_readahead.empty() && m_readahead[0] != Stream::eof());
-//   return (!m_readahead.empty() && m_readahead[0] != Stream::eof()) || m_input.good();
-// }
 
 // get
 // . Extracts a character from the stream and updates our position
 char Stream::get() {
   char ch = peek();
   AdvanceCurrent();
-  m_mark.column++;
-
-  if (ch == '\n') {
-    m_mark.column = 0;
-    m_mark.line++;
-  }
 
   return ch;
 }
@@ -300,52 +296,40 @@ std::string Stream::get(int n) {
   ret.reserve(n);
   for (int i = 0; i < n; i++)
     ret += get();
+
   return ret;
 }
 
 // eat
 // . Eats 'n' characters and updates our position.
 void Stream::eat(int n) {
-// Can one only know how much to eat?
   for (int i = 0; i < n; i++) {
-    // inline get();
-    //char ch = peek();
-    char ch = m_buffer[m_readaheadPos];
     AdvanceCurrent();
-    m_mark.column++;
-
-    if (ch == '\n') {
-        m_mark.column = 0;
-        m_mark.line++;
-    }
   }
 }
 
-void Stream::eat() {
-    char ch = m_buffer[m_readaheadPos];
-
-    //AdvanceCurrent();
-    m_readaheadPos++;
-
-    m_mark.pos++;
-    ReadAheadTo(0);
-
-    m_mark.column++;
-    if (ch == '\n') {
-        m_mark.column = 0;
-        m_mark.line++;
-    }
-}
 
 void Stream::AdvanceCurrent() {
-   if (m_readaheadSize - m_readaheadPos > 0) {
+
     m_readaheadPos++;
     m_mark.pos++;
-  }
 
-  ReadAheadTo(0);
+   // FIXME - what about escaped newlines?
+   if (likely(m_char != '\n')) {
+       m_mark.column++;
+   } else {
+       m_mark.column = 0;
+       m_mark.line++;
+   }
+
+   if (ReadAheadTo(0)) {
+       m_char = m_buffer[m_readaheadPos];
+   } else {
+       m_char = Stream::eof();
+   }
 }
 
+// NB only skips readahead whitespace
 void Stream::SkipWhiteSpace() {
     size_t count = 0;
     for (size_t i = m_readaheadPos; i < m_readaheadSize; i++) {
@@ -357,8 +341,55 @@ void Stream::SkipWhiteSpace() {
         m_readaheadPos += count;
         m_mark.pos += count;
         m_mark.column += count;
-        ReadAheadTo(0);
+        if (ReadAheadTo(0)) {
+            m_char = m_buffer[m_readaheadPos];
+        } else {
+            m_char = Stream::eof();
+        }
     }
+}
+
+int Stream::init(char* source) const {
+    size_t want = lookahead_elements;
+
+    ReadAheadTo(want-1);
+
+    size_t max = std::min(m_readaheadSize - m_readaheadPos, want);
+
+    if (likely(max == want) && (m_readaheadSize - m_readaheadPos > want * 2)) {
+        size_t byteoffset = m_readaheadPos % lookahead_elements;
+        uint64_t* buf = reinterpret_cast<uint64_t*>(source);
+        const uint64_t* src = reinterpret_cast<const uint64_t*>(m_buffer + m_readaheadPos - byteoffset);
+
+        *buf = *src;
+
+        if (byteoffset == 0) {
+            return want;
+        } else {
+            // move wanted byteoffset to start of source buf
+            buf[0] >>= (8 * byteoffset);
+
+            size_t available = want - byteoffset;
+
+            // printf("%d merge aligned! %d / %d - remain:%d\n",
+            //        int(byteoffset), int(offset), int(available), int(m_readaheadSize - m_readaheadPos));
+
+            // fill up remaining space from next src offset
+            buf[0] |= *(src+1) << (8 * available);
+
+            return want;
+        }
+    }
+
+    for (size_t i = 0; i < max; i++) {
+        source[i] = m_buffer[m_readaheadPos + i];
+    }
+
+    if (max < want) {
+        source[max] = Stream::eof();
+        return max;
+    }
+    return max+1;
 }
 
 bool Stream::_ReadAheadTo(size_t i) const {
@@ -383,8 +414,9 @@ bool Stream::_ReadAheadTo(size_t i) const {
                     break;
                 }
             }
-            if (!m_input.good())
+            if (!m_input.good()) {
                 m_readahead.push_back(Stream::eof());
+            }
         }
 
     } else if (m_charSet == utf16le || m_charSet == utf16be) {
