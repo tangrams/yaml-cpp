@@ -175,12 +175,12 @@ class Scanner {
 
   // scanscalar.cpp
   std::string ScanScalar(ScanScalarParams& info);
-  static int MatchScalarEmpty(const Exp::StreamSource& in);
-  static int MatchScalarSingleQuoted(const Exp::StreamSource& in);
-  static int MatchScalarDoubleQuoted(const Exp::StreamSource& in);
-  static int MatchScalarEnd(const Exp::StreamSource& in);
-  static int MatchScalarEndInFlow(const Exp::StreamSource& in);
-  static int MatchScalarIndent(const Exp::StreamSource& in);
+  static int MatchScalarEmpty(Exp::Source<4> in);
+  static int MatchScalarSingleQuoted(Exp::Source<4> in);
+  static int MatchScalarDoubleQuoted(Exp::Source<4> in);
+  static int MatchScalarEnd(Exp::Source<4> in);
+  static int MatchScalarEndInFlow(Exp::Source<4> in);
+  static int MatchScalarIndent(Exp::Source<4> in);
 
  private:
   // the stream

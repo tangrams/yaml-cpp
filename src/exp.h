@@ -11,10 +11,9 @@
 #define REGEXP_INLINE inline __attribute__((always_inline))
 #define TEST_INLINE inline __attribute__((always_inline))
 //#define TEST_INLINE __attribute__((noinline))
-//#define TEST_INLINE
 
-#define likely(x)       __builtin_expect(!!(x), 1)
-#define unlikely(x)       __builtin_expect(!!(x), 0)
+#define likely(x)   __builtin_expect(!!(x), 1)
+#define unlikely(x) __builtin_expect(!!(x), 0)
 
 namespace YAML {
 
@@ -58,8 +57,8 @@ template <char A>
 struct Char {
   template <std::size_t N>
   REGEXP_INLINE static int match(Source<N> source, const size_t pos) {
-      //if (likely(source[pos] != A)) { return -1;  } else { return 1; }
-      if (likely(source[pos] == A)) { return 1;  } else { return -1; }
+    //if (likely(source[pos] != A)) { return -1;  } else { return 1; }
+    if (unlikely(source[pos] == A)) { return 1;  } else { return -1; }
   }
   static const std::size_t lookahead = 1;
   static const std::size_t min_match = 1;
@@ -277,7 +276,6 @@ struct Matcher {
 
   template <std::size_t N>
   TEST_INLINE static int Match(Source<N> source) {
-    // return IsValidSource(source) ? Exp::match(source, source[0]) : -1;
     static_assert(N >= E::lookahead, "Passing too small matcher source ");
 
     return E::match(source, 0);
@@ -288,8 +286,33 @@ struct Matcher {
     return !(likely(Match(source) < 0));
   }
 
+  template<std::size_t N = E::lookahead,
+           typename std::enable_if<N != 1 && N != 2 && N != 3 && N != 4, int>::type = 0>
   TEST_INLINE static int Match(const Stream& in) {
-    return Match(in.LookaheadBuffer(lookahead));
+    return Match(in.GetLookaheadBuffer(lookahead));
+  }
+  template<std::size_t N = E::lookahead,
+           typename std::enable_if<N == 1, int>::type = 0>
+  TEST_INLINE static int Match(const Stream& in) {
+    Source<1> source;
+    in.LookaheadBuffer(source);
+    return Match(source);
+  }
+
+  template<std::size_t N = E::lookahead,
+           typename std::enable_if<N == 2, int>::type = 0>
+  TEST_INLINE static int Match(const Stream& in) {
+    Source<2> source;
+    in.LookaheadBuffer(source);
+    return Match(source);
+  }
+
+  template<std::size_t N = E::lookahead,
+           typename std::enable_if<N == 3 || N == 4, int>::type = 0>
+  TEST_INLINE static int Match(const Stream& in) {
+    Source<4> source;
+    in.LookaheadBuffer(source);
+    return Match(source);
   }
 
   TEST_INLINE static bool Matches(const Stream& in) {

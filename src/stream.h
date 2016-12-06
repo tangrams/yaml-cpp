@@ -3,6 +3,7 @@
 #include "yaml-cpp/noncopyable.h"
 #include "yaml-cpp/mark.h"
 #include "streamcharsource.h"
+
 #include <cstddef>
 #include <deque>
 #include <vector>
@@ -66,47 +67,75 @@ class Stream : private noncopyable {
   // Must be large enough for all regexp we use
   static constexpr size_t lookahead_elements = 8;
 
-  const Exp::StreamSource& LookaheadBuffer(int lookahead) const {
+  void LookaheadBuffer(Exp::Source<1>& out) const {
+    out[0] = m_char;
+  }
 
+  void LookaheadBuffer(Exp::Source<2>& out) const {
+    int offset = m_mark.pos - m_lookahead.streamPos;
+    if (m_lookahead.available > 2 + offset) {
+      out[0] = m_lookahead.buffer[offset];
+      out[1] = m_lookahead.buffer[offset+1];
+      return;
+    }
+    m_lookahead.streamPos += offset;
+    UpdateLookahead();
+
+    out[0] = m_lookahead.buffer[0];
+    out[1] = m_lookahead.buffer[1];
+  }
+
+  void LookaheadBuffer(Exp::Source<4>& out) const {
+    int offset = m_mark.pos - m_lookahead.streamPos;
+    auto dst = reinterpret_cast<uint32_t*>(out.data());
+
+    if (__builtin_expect(m_lookahead.available > 4 + offset, 1)) {
+      auto src = reinterpret_cast<uint64_t*>(m_lookahead.buffer.data());
+      dst[0] = src[0] >> (offset * 8);
+    } else {
+      auto src = reinterpret_cast<uint32_t*>(m_lookahead.buffer.data());
+      m_lookahead.streamPos += offset;
+      UpdateLookahead();
+      dst[0] = src[0];
+    }
+  }
+
+  const Exp::StreamSource& GetLookaheadBuffer(int lookahead) const {
     int offset = m_mark.pos - m_lookahead.streamPos;
     if (offset == 0 && m_lookahead.available >= lookahead) {
-        return m_lookahead.buffer;
+      return m_lookahead.buffer;
     }
-
     m_lookahead.streamPos += offset;
 
     if (m_lookahead.available > lookahead + offset) {
-        m_lookahead.available -= offset;
+      m_lookahead.available -= offset;
 
-        uint64_t* buf = reinterpret_cast<uint64_t*>(m_lookahead.buffer.data());
-        buf[0] >>= (8 * offset);
+      uint64_t* buf = reinterpret_cast<uint64_t*>(m_lookahead.buffer.data());
+      buf[0] >>= (8 * offset);
     } else {
-        m_lookahead.available = init(m_lookahead.buffer.data());
+      UpdateLookahead();
     }
-
     return m_lookahead.buffer;
   }
 
  private:
-  int init(char* source) const;
 
   enum CharacterSet { utf8, utf16le, utf16be, utf32le, utf32be };
 
-  mutable struct {
-    Exp::StreamSource buffer;
-    int available = 0;
+  mutable struct Lookahead {
     int streamPos = 0;
+    int available = 0;
+    Exp::StreamSource buffer;
   } m_lookahead;
 
-
   Mark m_mark;
+  char m_char = Stream::eof();
 
   size_t m_readaheadPos = 0;
   mutable size_t m_readaheadSize = 0;
   mutable std::vector<char> m_readahead;
 
   mutable const char* m_buffer;
-  char m_char = Stream::eof();
 
   std::istream& m_input;
   CharacterSet m_charSet;
@@ -126,6 +155,7 @@ class Stream : private noncopyable {
 
   void QueueUnicodeCodepoint(unsigned long ch) const;
 
+  void UpdateLookahead() const;
 };
 
 inline bool Stream::ReadAheadTo(size_t i) const {
