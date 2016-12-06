@@ -240,6 +240,36 @@ struct Empty {
   static const std::size_t max_match = 1;
 };
 
+template<typename A, typename ...B>
+struct Count {
+  template <std::size_t N>
+  REGEXP_INLINE static int match(Source<N> source, const size_t pos) {
+    int a = A::match(source, pos);
+    if (a <= 0) return 0;
+
+    int b = Count<B...>::match(source, pos + a);
+    if (b < 0) { return pos + a; }
+    return a + b;
+  }
+  static const std::size_t lookahead = static_sum<A::lookahead, B::lookahead...>::value;
+  // TODO check this again when using SEQ<Count...>
+  static const std::size_t min_match = static_sum<A::min_match, B::min_match...>::value;
+  static const std::size_t max_match = static_sum<A::max_match, B::max_match...>::value;
+};
+
+template<typename A>
+struct Count<A> {
+  template <std::size_t N>
+  REGEXP_INLINE static int match(Source<N> source, const size_t pos) {
+    int a = A::match(source, pos);
+    if (a > 0) return a;
+    return 0;
+  }
+  static const std::size_t lookahead = A::lookahead;
+  static const std::size_t min_match = A::min_match;
+  static const std::size_t max_match = A::max_match;
+};
+
 template <typename E>
 struct Matcher {
 
