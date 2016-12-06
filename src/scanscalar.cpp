@@ -8,23 +8,23 @@
 
 namespace YAML {
 
-int Scanner::MatchScalarEmpty(const Exp::StreamSource&) {
+int Scanner::MatchScalarEmpty(Exp::Source<4>) {
   // This is checked by !INPUT as well
   return -1;
 }
 
-int Scanner::MatchScalarSingleQuoted(const Exp::StreamSource& in) {
+int Scanner::MatchScalarSingleQuoted(Exp::Source<4> in) {
   using namespace Exp;
   return (Matcher<Char<'\''>>::Matches(in) &&
           !EscSingleQuote::Matches(in)) ? 1 : -1;
 }
 
-int Scanner::MatchScalarDoubleQuoted(const Exp::StreamSource& in) {
+int Scanner::MatchScalarDoubleQuoted(Exp::Source<4> in) {
   using namespace Exp;
   return Matcher<Char<'\"'>>::Match(in);
 }
 
-int Scanner::MatchScalarEnd(const Exp::StreamSource& in) {
+int Scanner::MatchScalarEnd(Exp::Source<4> in) {
   using namespace Exp;
   using ScalarEnd = Matcher<
       OR < SEQ < Char<':'>,
@@ -35,7 +35,7 @@ int Scanner::MatchScalarEnd(const Exp::StreamSource& in) {
   return ScalarEnd::Match(in);
 }
 
-int Scanner::MatchScalarEndInFlow(const Exp::StreamSource& in) {
+int Scanner::MatchScalarEndInFlow(Exp::Source<4> in) {
   using namespace Exp;
   using ScalarEndInFlow = Matcher <
       OR < SEQ < Char<':'>,
@@ -54,10 +54,10 @@ int Scanner::MatchScalarEndInFlow(const Exp::StreamSource& in) {
            SEQ < detail::BlankOrBreak,
                  detail::Comment>>>;
 
-  return ScalarEndInFlow::Match(in);
+   return ScalarEndInFlow::Match(in);
 }
 
-int Scanner::MatchScalarIndent(const Exp::StreamSource& in) {
+int Scanner::MatchScalarIndent(Exp::Source<4> in) {
   using namespace Exp;
   using ScalarEndInFlow = Matcher <
       SEQ < detail::Blank,
@@ -66,7 +66,7 @@ int Scanner::MatchScalarIndent(const Exp::StreamSource& in) {
   return ScalarEndInFlow::Match(in);
 }
 
-static bool MatchDocIndicator(const Exp::StreamSource& in) {
+static bool MatchDocIndicator(const Stream& in) {
  using namespace Exp;
  using DocIndicator = Matcher<OR <detail::DocStart, detail::DocEnd>>;
 
@@ -142,8 +142,7 @@ std::string Scanner::ScanScalar(ScanScalarParams& params) {
 
     // doc indicator?
     if (params.onDocIndicator == BREAK && INPUT.column() == 0) {
-      auto& input = INPUT.LookaheadBuffer(4);
-      if (MatchDocIndicator(input)) {
+      if (MatchDocIndicator(INPUT)) {
         break;
       }
     }
@@ -182,7 +181,8 @@ std::string Scanner::ScanScalar(ScanScalarParams& params) {
     }
 
     // was this an empty line?
-    auto& input = INPUT.LookaheadBuffer(4);
+    Exp::Source<4> input;
+    INPUT.LookaheadBuffer(input);
     bool nextEmptyLine = Exp::Break::Matches(input);
     bool nextMoreIndented = Exp::Blank::Matches(input);
     if (params.fold == FOLD_BLOCK && foldedNewlineCount == 0 && nextEmptyLine)
@@ -230,7 +230,8 @@ static void ScanLine(Stream& INPUT, const ScanScalarParams& params,
   while (INPUT) {
 
     // find break posiion
-    Exp::StreamSource input = INPUT.LookaheadBuffer(4);
+    Exp::Source<4> input;
+    INPUT.LookaheadBuffer(input);
 
     // space 0x20 : 0010000ß
     // tab   0x09 : 00001001
@@ -246,7 +247,7 @@ static void ScanLine(Stream& INPUT, const ScanScalarParams& params,
         }
         // document indicator?
         if (unlikely(INPUT.column() == 0) &&
-            MatchDocIndicator(input)) {
+            MatchDocIndicator(INPUT)) {
 
           if (params.onDocIndicator == BREAK) {
             break;
@@ -330,9 +331,7 @@ static void EatToIndentation(Stream& INPUT, ScanScalarParams& params, bool found
   // Don't eat the whitespace before comments
   while (max > 0) {
 
-    size_t lookahead = std::min(std::max(2, max), 8);
-
-    auto& input = INPUT.LookaheadBuffer(lookahead);
+    auto input = INPUT.GetLookaheadBuffer(8);
 
     int pos = SpaceInvaders::Match(input);
 
@@ -370,7 +369,9 @@ static void EatAfterIndentation(Stream& INPUT, ScanScalarParams& params) {
     if (!params.eatLeadingWhitespace) {
       break;
     }
-    auto& input = INPUT.LookaheadBuffer(2);
+    // FIXME: 2
+    Exp::Source<4> input;
+    INPUT.LookaheadBuffer(input);
     if (params.indentFn && params.indentFn(input) >= 0) {
       break;
     }

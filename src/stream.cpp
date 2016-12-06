@@ -428,47 +428,51 @@ void Stream::EatBlanks() {
   }
 }
 
-int Stream::init(char* source) const {
-    size_t want = lookahead_elements;
+void Stream::UpdateLookahead() const {
 
-    ReadAheadTo(want-1);
+  const size_t want = lookahead_elements;
 
+  if (m_readaheadPos + want > m_readaheadSize) {
+    _ReadAheadTo(want);
+  }
+
+  if (likely(m_readaheadPos + want * 2 < m_readaheadSize)) {
+
+    const char* src = reinterpret_cast<const char*>(m_buffer + m_readaheadPos);
+
+    // 8 byte aligned source
+    const uint64_t* aligned = reinterpret_cast<const uint64_t*>(
+      (reinterpret_cast<size_t>(src) + 7) & ~7);
+
+    // Always 8 byte aligned
+    uint64_t* dst = reinterpret_cast<uint64_t*>(m_lookahead.buffer.data());
+
+    size_t offset = reinterpret_cast<const char*>(aligned) - src;
+
+    if (offset != 0) {
+      // fill with rest of previous 8 bytes
+      dst[0] = aligned[-1] >> (8 * (want - offset));
+      // fill remaining space from current src offset
+      dst[0] |= aligned[0] << (8 * offset);
+    } else {
+      dst[0] = aligned[0];
+    }
+    m_lookahead.available = want;
+
+  } else {
     size_t max = std::min(m_readaheadSize - m_readaheadPos, want);
 
-    if (likely(max == want) && (m_readaheadSize - m_readaheadPos > want * 2)) {
-        size_t byteoffset = m_readaheadPos % lookahead_elements;
-        uint64_t* buf = reinterpret_cast<uint64_t*>(source);
-        const uint64_t* src = reinterpret_cast<const uint64_t*>(m_buffer + m_readaheadPos - byteoffset);
-
-        *buf = *src;
-
-        if (byteoffset == 0) {
-            return want;
-        } else {
-            // move wanted byteoffset to start of source buf
-            buf[0] >>= (8 * byteoffset);
-
-            size_t available = want - byteoffset;
-
-            // printf("%d merge aligned! %d / %d - remain:%d\n",
-            //        int(byteoffset), int(offset), int(available), int(m_readaheadSize - m_readaheadPos));
-
-            // fill up remaining space from next src offset
-            buf[0] |= *(src+1) << (8 * available);
-
-            return want;
-        }
-    }
-
     for (size_t i = 0; i < max; i++) {
-        source[i] = m_buffer[m_readaheadPos + i];
+      m_lookahead.buffer[i] = m_buffer[m_readaheadPos + i];
+    }
+    if (max < want) {
+      m_lookahead.buffer[max] = Stream::eof();
+      // added the EOF
+      max += 1;
     }
 
-    if (max < want) {
-        source[max] = Stream::eof();
-        return max;
-    }
-    return max+1;
+    m_lookahead.available = max;
+  }
 }
 
 bool Stream::_ReadAheadTo(size_t i) const {

@@ -122,24 +122,24 @@ void Scanner::ScanNextToken() {
     return ScanFlowEntry();
   }
 
-  // Get large enough lookahead buffer for all Matchers
-  auto input = INPUT.LookaheadBuffer(5);
-
   if (INPUT.column() == 0) {
     if (c == Keys::Directive) {
       return ScanDirective();
     }
 
     // document token
-    if (Exp::DocStart::Matches(input)) {
+    if (Exp::DocStart::Matches(INPUT)) {
         return ScanDocStart();
     }
 
-    if (Exp::DocEnd::Matches(input)) {
+    if (Exp::DocEnd::Matches(INPUT)) {
         return ScanDocEnd();
     }
   }
 
+  // Get large enough lookahead buffer for all Matchers
+  Exp::Source<4> input;
+  INPUT.LookaheadBuffer(input);
   // block/map stuff
   if (Exp::BlockEntry::Matches(input)) {
     return ScanBlockEntry();
