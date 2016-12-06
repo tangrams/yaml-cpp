@@ -9,6 +9,8 @@
 #include <iostream>
 #include <set>
 #include <string>
+#include <array>
+#include <cstring>
 
 namespace YAML {
 class Stream : private noncopyable {
@@ -19,26 +21,37 @@ class Stream : private noncopyable {
   Stream(const std::string& input);
   ~Stream();
 
-  //operator bool() const;
   operator bool() const {
-    return (m_readaheadSize > m_readaheadPos &&
-            m_buffer[m_readaheadPos] != Stream::eof()) || (!m_nostream && m_input.good());
+    return m_char != Stream::eof();
   }
 
   bool operator!() const { return !static_cast<bool>(*this); }
 
-  //inline char peek() const;
   char peek() const {
-    if (m_readaheadSize - m_readaheadPos == 0) {
-        return Stream::eof();
-    }
-    return m_buffer[m_readaheadPos];
+    return m_char;
   }
 
   char get();
   std::string get(int n);
   void eat(int n);
-  void eat();
+  void eat() {
+    m_readaheadPos++;
+    m_mark.pos++;
+
+    // FIXME - what about escaped newlines?
+    if (m_char != '\n') {
+      m_mark.column++;
+    } else {
+      m_mark.column = 0;
+      m_mark.line++;
+    }
+
+    if (ReadAheadTo(0)) {
+      m_char = m_buffer[m_readaheadPos];
+    } else {
+      m_char = Stream::eof();
+    }
+  }
 
   static constexpr char eof() { return 0x04; }
 
@@ -48,18 +61,55 @@ class Stream : private noncopyable {
   int column() const { return m_mark.column; }
   void ResetColumn() { m_mark.column = 0; }
   void SkipWhiteSpace();
+
+
+  // Must be large enough for all regexp we use
+  static constexpr size_t lookahead_elements = 8;
+
+  const std::array<char, lookahead_elements>& LookaheadBuffer(int lookahead) const {
+
+    int offset = m_mark.pos - m_lookahead.streamPos;
+    if (offset == 0 && m_lookahead.available >= lookahead) {
+        return m_lookahead.buffer;
+    }
+
+    m_lookahead.streamPos += offset;
+
+    if (m_lookahead.available > lookahead + offset) {
+        m_lookahead.available -= offset;
+
+        uint64_t* buf = reinterpret_cast<uint64_t*>(m_lookahead.buffer.data());
+        buf[0] >>= (8 * offset);
+    } else {
+        m_lookahead.available = init(m_lookahead.buffer.data());
+    }
+
+    return m_lookahead.buffer;
+  }
+
  private:
+  int init(char* source) const;
+
   enum CharacterSet { utf8, utf16le, utf16be, utf32le, utf32be };
 
-  std::istream& m_input;
+  mutable struct {
+    std::array<char, lookahead_elements> buffer;
+    int available = 0;
+    int streamPos = 0;
+  } m_lookahead;
+
+
   Mark m_mark;
 
-  CharacterSet m_charSet;
-  mutable std::vector<char> m_readahead;
   size_t m_readaheadPos = 0;
-  mutable const char* m_buffer;
-
   mutable size_t m_readaheadSize = 0;
+  mutable std::vector<char> m_readahead;
+
+  mutable const char* m_buffer;
+  char m_char = Stream::eof();
+
+  std::istream& m_input;
+  CharacterSet m_charSet;
 
   unsigned char* const m_pPrefetched;
   mutable size_t m_nPrefetchedAvailable;
@@ -67,7 +117,6 @@ class Stream : private noncopyable {
 
   bool m_nostream = false;
   inline void AdvanceCurrent();
-  char CharAt(size_t i) const;
   bool ReadAheadTo(size_t i) const;
   bool _ReadAheadTo(size_t i) const;
   void StreamInUtf8() const;
@@ -79,13 +128,10 @@ class Stream : private noncopyable {
 
 };
 
-// CharAt
-// . Unchecked access
-inline char Stream::CharAt(size_t i) const { return m_buffer[i + m_readaheadPos]; }
-
 inline bool Stream::ReadAheadTo(size_t i) const {
-  if (m_readaheadSize - m_readaheadPos > i)
+  if (m_readaheadSize - m_readaheadPos > i) {
     return true;
+  }
   return _ReadAheadTo(i);
 }
 }
