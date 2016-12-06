@@ -3,7 +3,7 @@
 #include <string>
 #include <functional>
 
-#include "stream.h"
+#include "exp.h"
 
 namespace YAML {
 enum CHOMP { STRIP = -1, CLIP, KEEP };
@@ -25,7 +25,9 @@ struct ScanScalarParams {
         leadingSpaces(false) {}
 
   // input:
-  std::function<int(const Stream& in)> end;   // what condition ends this scalar?
+  //std::function<int(const Stream& in)> end;   // what condition ends this scalar?
+  int (*end)(const Exp::StreamSource& in);   // what condition ends this scalar?
+
   bool eatEnd;        // should we eat that condition when we see it?
   int indent;         // what level of indentation should be eaten and ignored?
   bool detectIndent;  // should we try to autodetect the indent?

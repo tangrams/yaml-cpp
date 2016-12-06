@@ -8,23 +8,23 @@
 
 namespace YAML {
 
-int Scanner::MatchScalarEmpty(const Stream&) {
+int Scanner::MatchScalarEmpty(const Exp::StreamSource&) {
   // This is checked by !INPUT as well
   return -1;
 }
 
-int Scanner::MatchScalarSingleQuoted(const Stream& in) {
+int Scanner::MatchScalarSingleQuoted(const Exp::StreamSource& in) {
   using namespace Exp;
   return (Matcher<Char<'\''>>::Matches(in) &&
           !EscSingleQuote::Matches(in)) ? 1 : -1;
 }
 
-int Scanner::MatchScalarDoubleQuoted(const Stream& in) {
+int Scanner::MatchScalarDoubleQuoted(const Exp::StreamSource& in) {
   using namespace Exp;
   return Matcher<Char<'\"'>>::Match(in);
 }
 
-int Scanner::MatchScalarEnd(const Stream& in) {
+int Scanner::MatchScalarEnd(const Exp::StreamSource& in) {
   using namespace Exp;
   using ScalarEnd = Matcher<
       OR < SEQ < Char<':'>,
@@ -35,7 +35,7 @@ int Scanner::MatchScalarEnd(const Stream& in) {
   return ScalarEnd::Match(in);
 }
 
-int Scanner::MatchScalarEndInFlow(const Stream& in) {
+int Scanner::MatchScalarEndInFlow(const Exp::StreamSource& in) {
   using namespace Exp;
   using ScalarEndInFlow = Matcher <
       OR < SEQ < Char<':'>,
@@ -57,23 +57,13 @@ int Scanner::MatchScalarEndInFlow(const Stream& in) {
   return ScalarEndInFlow::Match(in);
 }
 
-bool Scanner::MatchDocIndicator(const Stream& in) {
+bool Scanner::MatchDocIndicator(const Exp::StreamSource& in) {
  using namespace Exp;
  using DocIndicator = Matcher<OR <detail::DocStart, detail::DocEnd>>;
 
  return DocIndicator::Matches(in);
 }
 
-bool Scanner::CheckDocIndicator(Stream& INPUT, ScanScalarParams& params) {
-  if (MatchDocIndicator(INPUT)) {
-    if (params.onDocIndicator == BREAK) {
-      return true;
-    } else if (params.onDocIndicator == THROW) {
-      throw ParserException(INPUT.mark(), ErrorMsg::DOC_IN_SCALAR);
-    }
-  }
-  return false;
-}
 
 // ScanScalar
 // . This is where the scalar magic happens.
@@ -113,29 +103,36 @@ std::string Scanner::ScanScalar(ScanScalarParams& params) {
       }
 
       // find break posiion
-      char ch = INPUT.peek();
+      auto& input = INPUT.LookaheadBuffer(4);
 
-      bool isWhiteSpace = Exp::Blank::Matches(INPUT);
+      bool isWhiteSpace = Exp::Blank::Matches(input);
 
       if (!isWhiteSpace) {
-          if (Exp::Break::Matches(INPUT)) {
+          if (Exp::Break::Matches(input)) {
               break;
           }
           // document indicator?
-          if (INPUT.column() == 0 && CheckDocIndicator(INPUT, params)) {
-              break;
+          if (INPUT.column() == 0) {
+              if (MatchDocIndicator(input)) {
+                  if (params.onDocIndicator == BREAK) {
+                      break;
+                  } else if (params.onDocIndicator == THROW) {
+                      throw ParserException(INPUT.mark(), ErrorMsg::DOC_IN_SCALAR);
+                  }
+              }
           }
       }
 
       // find end posiion
-      if (params.end(INPUT) >= 0) {
-          break;
+      if (params.end(input) >= 0) {
+        break;
       }
 
       foundNonEmptyLine = true;
       pastOpeningBreak = true;
 
-      if (params.escape != ch) {
+      char ch = INPUT.peek();
+      if (likely(params.escape != ch)) {
         // just add the character
         scalar += ch;
         INPUT.eat();
@@ -146,18 +143,16 @@ std::string Scanner::ScanScalar(ScanScalarParams& params) {
 
       } else {
         // escaped newline? (only if we're escaping on slash)
-        if (params.escape == '\\' && Exp::EscBreak::Matches(INPUT)) {
+        if (params.escape == '\\' && Exp::EscBreak::Matches(input)) {
           // eat escape character and get out (but preserve trailing whitespace!)
           INPUT.eat();
-          lastNonWhitespaceChar = scalar.size();
-          lastEscapedChar = scalar.size();
+          lastEscapedChar = lastNonWhitespaceChar = scalar.size();
           escapedNewline = true;
           break;
 
         } else {
           scalar += Exp::Escape(INPUT);
-          lastNonWhitespaceChar = scalar.size();
-          lastEscapedChar = scalar.size();
+          lastEscapedChar = lastNonWhitespaceChar = scalar.size();
         }
       }
     } // end while(1)
@@ -170,15 +165,17 @@ std::string Scanner::ScanScalar(ScanScalarParams& params) {
       break; // while (INPUT)
     }
 
+    auto& input = INPUT.LookaheadBuffer(4);
+
     // doc indicator?
     if (params.onDocIndicator == BREAK &&
         INPUT.column() == 0 &&
-        MatchDocIndicator(INPUT)) {
+        MatchDocIndicator(input)) {
       break; // while (INPUT)
     }
 
     // are we done via character match?
-    if (int n = params.end(INPUT) >= 0) {
+    if (int n = params.end(input) >= 0) {
       if (params.eatEnd) {
         INPUT.eat(n);
       }
@@ -199,8 +196,10 @@ std::string Scanner::ScanScalar(ScanScalarParams& params) {
     // first the required indentation
     while (INPUT.peek() == ' ' &&
            (INPUT.column() < params.indent || (params.detectIndent && !foundNonEmptyLine))) {
-
-      if (params.end(INPUT) >= 0) { break; }
+      // which matcher applies here ?
+      // EndScalar / EndScalarInFlow
+      auto& input = INPUT.LookaheadBuffer(4);
+      if (params.end(input) >= 0) { break; }
 
       INPUT.eat();
     }
@@ -221,8 +220,8 @@ std::string Scanner::ScanScalar(ScanScalarParams& params) {
       if (!params.eatLeadingWhitespace) {
         break;
       }
-
-      if (params.end(INPUT) >= 0) {
+      auto& input = INPUT.LookaheadBuffer(4);
+      if (params.end(input) >= 0) {
         break;
       }
 
