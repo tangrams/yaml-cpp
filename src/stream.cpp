@@ -309,7 +309,6 @@ void Stream::eat(int n) {
   }
 }
 
-
 void Stream::AdvanceCurrent() {
 
     m_readaheadPos++;
@@ -323,33 +322,82 @@ void Stream::AdvanceCurrent() {
        m_mark.line++;
    }
 
-   if (ReadAheadTo(0)) {
+   if (likely(ReadAheadTo(0))) {
        m_char = m_buffer[m_readaheadPos];
    } else {
        m_char = Stream::eof();
    }
 }
 
-// NB only skips readahead whitespace
 void Stream::EatSpace() {
+  if (m_char != ' ') { return; }
 
-  while (m_char == ' ') {
+  int pos = m_readaheadPos;
+  int available = m_readaheadSize;
 
+  char ch = m_char;
+  do {
+    if (++pos == available) {
+      int count = pos - m_readaheadPos;
+      m_readaheadPos = pos;
+
+      m_mark.pos += count;
+      m_mark.column += count;
+
+      if (!ReadAheadTo(0)) {
+        m_char = Stream::eof();
+        return;
+      }
+      pos = m_readaheadPos;
+      available = m_readaheadSize;
+    }
+
+    ch = m_buffer[pos];
+
+  } while (ch == ' ');
+
+  int count = pos - m_readaheadPos;
+  m_readaheadPos = pos;
+
+  m_mark.pos += count;
+  m_mark.column += count;
+
+  if (!ReadAheadTo(0)) {
+    m_char = Stream::eof();
+    return;
+  }
+
+  m_char = m_buffer[m_readaheadPos];
+}
+
+bool Stream::EatLineBreak() {
+
+  if (m_char == '\n') {
     m_readaheadPos++;
     m_mark.pos++;
-    m_mark.column++;
-
-    if (ReadAheadTo(0)) {
-      m_char = m_buffer[m_readaheadPos];
-    } else {
-      m_char = Stream::eof();
-    }
+    m_mark.column = 0;
+    m_mark.line++;
+  } else if (m_char == '\r' &&
+             (ReadAheadTo(1) && m_buffer[m_readaheadPos + 1])) {
+    m_readaheadPos += 2;
+    m_mark.pos += 2;
+    m_mark.column = 0;
+    m_mark.line++;
+  } else {
+    return false;
   }
+
+  if (ReadAheadTo(0)) {
+    m_char = m_buffer[m_readaheadPos];
+  } else {
+    m_char = Stream::eof();
+  }
+  return true;
 }
 
 void Stream::EatToEndOfLine() {
 
-  while (m_char != Stream::eof() && !Exp::Break::Matches(*this)) {
+  while (m_char != '\n' && m_char != Stream::eof()) {
 
     m_readaheadPos++;
     m_mark.pos++;

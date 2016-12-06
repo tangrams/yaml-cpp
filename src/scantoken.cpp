@@ -37,8 +37,7 @@ void Scanner::ScanDirective() {
   // read parameters
   while (1) {
     // first get rid of whitespace
-    while (Exp::Blank::Matches(INPUT))
-      INPUT.eat();
+    INPUT.EatBlanks();
 
     // break on newline or comment
     if (!INPUT || Exp::Break::Matches(INPUT) || Exp::Comment::Matches(INPUT))

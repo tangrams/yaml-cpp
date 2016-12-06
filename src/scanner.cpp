@@ -208,17 +208,14 @@ void Scanner::ScanToNextToken() {
     // then eat a comment
     if (Exp::Comment::Matches(INPUT)) {
       // eat until line break
-      while (INPUT && !Exp::Break::Matches(INPUT)) {
-        INPUT.eat();
-      }
+      INPUT.EatToEndOfLine();
     }
 
     // if it's NOT a line break, then we're done!
-    int n = Exp::Break::Match(INPUT);
-    if (n < 0) { break; }
-
+    if (!INPUT.EatLineBreak()) {
+        break;
+    }
     // otherwise, let's eat the line break and keep going
-    INPUT.eat(n);
 
     // oh yeah, and let's get rid of that simple key
     InvalidateSimpleKey();

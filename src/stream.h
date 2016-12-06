@@ -11,6 +11,7 @@
 #include <string>
 #include <array>
 #include <cstring>
+#include <cassert>
 
 namespace YAML {
 class Stream : private noncopyable {
@@ -34,17 +35,13 @@ class Stream : private noncopyable {
   char get();
   std::string get(int n);
   void eat(int n);
+  // NB: Do not use to eat line breaks! Use eat(n) instead.
   void eat() {
     m_readaheadPos++;
     m_mark.pos++;
 
-    // FIXME - what about escaped newlines?
-    if (m_char != '\n') {
-      m_mark.column++;
-    } else {
-      m_mark.column = 0;
-      m_mark.line++;
-    }
+    assert(m_char != '\n');
+    m_mark.column++;
 
     if (ReadAheadTo(0)) {
       m_char = m_buffer[m_readaheadPos];
@@ -63,7 +60,7 @@ class Stream : private noncopyable {
   void EatSpace();
   void EatToEndOfLine();
   void EatBlanks();
-
+  bool EatLineBreak();
 
   // Must be large enough for all regexp we use
   static constexpr size_t lookahead_elements = 8;
