@@ -269,6 +269,47 @@ struct Count<A> {
   static const std::size_t max_match = A::max_match;
 };
 
+struct BreakT {
+  template <std::size_t N>
+  REGEXP_INLINE static int match(Source<N> source, const size_t pos) {
+    if (source[pos] == '\n') return 1;
+    if (source[pos] == '\r' &&
+        source[pos+1] == '\n') return 2;
+    return -1;
+  }
+  static const std::size_t lookahead = 2;
+  static const std::size_t min_match = 1;
+  static const std::size_t max_match = 2;
+};
+
+struct BlankT {
+  template <std::size_t N>
+  REGEXP_INLINE static int match(Source<N> source, const size_t pos) {
+    if ((source[pos] == ' ') |
+        (source[pos] == '\t')) return 1;
+    return -1;
+  }
+  static const std::size_t lookahead = 1;
+  static const std::size_t min_match = 1;
+  static const std::size_t max_match = 1;
+};
+
+struct BlankOrBreakT {
+  template <std::size_t N>
+  REGEXP_INLINE static int match(Source<N> source, const size_t pos) {
+    if ((source[pos] == ' ') |
+        (source[pos] == '\t') |
+        (source[pos] == '\n')) return 1;
+
+    if ((source[pos] == '\r') &&
+        (source[pos+1] == '\n')) return 2;
+    return -1;
+  }
+  static const std::size_t lookahead = 2;
+  static const std::size_t min_match = 1;
+  static const std::size_t max_match = 2;
+};
+
 template <typename E>
 struct Matcher {
 
@@ -379,14 +420,20 @@ using Space = Char<' '>;
 
 using Tab = Char<'\t'>;
 
-using Blank = OR < Space, Tab >;
+// using Blank = OR < Space, Tab >;
 
-using Break =
-  OR < Char<'\n'>,
-       SEQ < Char<'\r'>,
-             Char<'\n'> >>;
+// using Break =
+//   OR < Char<'\n'>,
+//        SEQ < Char<'\r'>,
+//              Char<'\n'> >>;
 
-using BlankOrBreak = OR < Blank, Break >;
+//using BlankOrBreak = OR < Blank, Break >;
+
+using Blank = BlankT;
+
+using Break = BreakT;
+
+using BlankOrBreak = BlankOrBreakT;
 
 using Digit = Range<'0', '9'>;
 
