@@ -155,14 +155,9 @@ inline bool node_data::remove(const Key& key, shared_memory pMemory) {
   if (m_type == NodeType::Sequence) {
     return remove_idx<Key>::remove(m_sequence, key);
   } else if (m_type == NodeType::Map) {
-    kv_pairs::iterator it = m_undefinedPairs.begin();
-    while (it != m_undefinedPairs.end()) {
-      kv_pairs::iterator jt = std::next(it);
-      if (it->first->equals(key, pMemory)) {
-        m_undefinedPairs.erase(it);
-      }
-      it = jt;
-    }
+      m_undefinedPairs.remove_if([&](kv_pair& it){
+                                     return it.first->equals(key, pMemory);
+                                 });
 
     for (node_map::iterator iter = m_map.begin(); iter != m_map.end(); ++iter) {
       if (iter->first->equals(key, pMemory)) {
