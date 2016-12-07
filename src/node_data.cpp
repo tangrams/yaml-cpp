@@ -129,23 +129,20 @@ std::size_t node_data::compute_seq_size() const {
   while (seqSize < m_sequence.size() && m_sequence[seqSize]->is_defined())
     seqSize++;
 
-  if (seqSize == 0) { m_hasUndefined = false; }
+  if (seqSize == m_sequence.size()) { m_hasUndefined = false; }
   return seqSize;
 }
 
 std::size_t node_data::compute_map_size() const {
-  std::size_t seqSize = m_map.size();
-  if (!m_hasUndefined) { return seqSize; }
+  if (!m_hasUndefined) { return m_map.size(); }
 
-  m_undefinedPairs.remove_if([&](kv_pair& it){
-          if (it.first->is_defined() && it.second->is_defined()) {
-              return true;
-          } else {
-              seqSize--;
-              return false;
-          }
-      });
-  if (seqSize == 0) { m_hasUndefined = false; }
+  std::size_t seqSize = 0;
+  for (auto& it : m_map)  {
+    if (it.first->is_defined() && it.second->is_defined()) {
+      seqSize++;
+    }
+  }
+  if (seqSize == m_map.size()) { m_hasUndefined = false; }
   return seqSize;
 }
 
@@ -267,10 +264,6 @@ bool node_data::remove(node& key, shared_memory /* pMemory */) {
   if (m_type != NodeType::Map)
     return false;
 
-  m_undefinedPairs.remove_if([&](kv_pair& it){
-                                 return it.first->is(key);
-                             });
-
   for (node_map::iterator it = m_map.begin(); it != m_map.end(); ++it) {
     if (it->first->is(key)) {
       m_map.erase(it);
@@ -287,14 +280,12 @@ void node_data::reset_sequence() {
 
 void node_data::reset_map() {
   m_map.clear();
-  m_undefinedPairs.clear();
 }
 
 void node_data::insert_map_pair(node& key, node& value) {
   m_map.emplace_back(&key, &value);
 
   if (!key.is_defined() || !value.is_defined()) {
-    m_undefinedPairs.emplace_front(&key, &value);
     m_hasUndefined = true;
   }
 }

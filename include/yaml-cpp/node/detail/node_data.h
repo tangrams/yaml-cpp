@@ -120,11 +120,6 @@ class YAML_CPP_API node_data : public ref_counted {
 
   // 32 byte (GCC)
   const std::string* m_tag;
-
-  // 8 byte - pointer
-  typedef std::pair<node*, node*> kv_pair;
-  typedef std::forward_list<kv_pair> kv_pairs;
-  mutable kv_pairs m_undefinedPairs;
 };
 }
 }
