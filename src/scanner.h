@@ -167,7 +167,8 @@ class Scanner {
     void Validate();
     void Invalidate();
 
-    Mark mark;
+    int markPos;
+    int markLine;
     std::size_t flowLevel;
     IndentMarker *pIndent;
     Token *pMapStart, *pKey;
