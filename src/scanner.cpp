@@ -12,51 +12,77 @@ Scanner::Scanner(std::istream& in)
       m_startedStream(false),
       m_endedStream(false),
       m_simpleKeyAllowed(false),
-      m_canBeJSONFlow(false) {}
+      m_canBeJSONFlow(false) {
+  InitTokens();
+}
 
 Scanner::Scanner(const std::string& in)
     : INPUT(in),
       m_startedStream(false),
       m_endedStream(false),
       m_simpleKeyAllowed(false),
-      m_canBeJSONFlow(false) {}
+      m_canBeJSONFlow(false) {
+  InitTokens();
+}
 
 Scanner::~Scanner() {}
 
 bool Scanner::empty() {
   EnsureTokensInQueue();
-  return m_tokens.empty();
+  return m_tokenOut == m_tokens.end();
 }
 
 void Scanner::pop() {
-  EnsureTokensInQueue();
-  if (!m_tokens.empty()) {
+  if (!empty()) {
     pop_unsafe();
   }
 }
 
 Token& Scanner::peek() {
   EnsureTokensInQueue();
-  assert(!m_tokens.empty());  // should we be asserting here? I mean, we really
-                              // just be checking
-                              // if it's empty before peeking.
+
+  // should we be asserting here? I mean, we really
+  // just be checking if it's empty before peeking.
+  assert(m_tokenOut != m_tokens.end());
 
 #if 0
-                static Token *pLast = 0;
-                if(pLast != &m_tokens.front())
-                        std::cerr << "peek: " << m_tokens.front() << "\n";
-                pLast = &m_tokens.front();
+  static Token *pLast = 0;
+  if(pLast != &m_tokens.front())
+    std::cerr << "peek: " << m_tokens.front() << "\n";
+  pLast = &m_tokens.front();
 #endif
 
-  return m_tokens.front();
+  return peek_unsafe();
+}
+
+void Scanner::CreateToken() {
+  m_tokenIn = m_tokens.emplace_after(m_tokenIn);
+}
+
+void Scanner::InitTokens() {
+  m_tokenOut = m_tokens.end();
+  for (int i = 0; i < 64; i++) {
+    m_tokens.emplace_front();
+    if (i == 0) { m_tokenIn = m_tokens.begin(); }
+  }
+
+  // auto prev = m_tokens.begin();
+  // auto it = m_tokens.begin();
+  // ++it;
+  // for (; it != m_tokens.end(); it++) {
+  //   printf("%li ", (std::ptrdiff_t(&(*it)) - std::ptrdiff_t(&(*prev))));
+  //   prev = it;
+  // }
+  // printf("\n -- %lu / %lu\n", sizeof(Token), alignof(Token));
 }
 
 Mark Scanner::mark() const { return INPUT.mark(); }
 
 void Scanner::EnsureTokensInQueue() {
   while (1) {
-    if (!m_tokens.empty()) {
-      Token& token = m_tokens.front();
+    if (m_tokenOut != m_tokens.end()) {
+      Token& token = *m_tokenOut;
+      m_tokenPtr = &token;
 
       // if this guy's valid, then we're done
       if (token.status == Token::VALID) {
@@ -80,6 +106,8 @@ void Scanner::EnsureTokensInQueue() {
     // no? then scan...
     ScanNextToken();
   }
+
+  m_tokenPtr = nullptr;
 }
 
 void Scanner::ScanNextToken() {
@@ -273,11 +301,6 @@ void Scanner::EndStream() {
   m_endedStream = true;
 }
 
-Token* Scanner::PushToken(Token::TYPE type) {
-  push(type, INPUT.mark());
-  return &m_tokens.back();
-}
-
 Token::TYPE Scanner::GetStartTokenFor(IndentMarker::INDENT_TYPE type) const {
   switch (type) {
     case IndentMarker::SEQ:
@@ -315,7 +338,10 @@ Scanner::IndentMarker* Scanner::PushIndentTo(int column,
   IndentMarker& indent = m_indentRefs.back();
 
   // push a start token
-  indent.pStartToken = PushToken(GetStartTokenFor(type));
+  auto& token = push();
+  token.type = GetStartTokenFor(type);
+  token.mark = INPUT.mark();
+  indent.pStartToken = &token;
 
   // and then the indent
   m_indents.push(&indent);
@@ -375,17 +401,20 @@ void Scanner::PopIndent() {
     return;
   }
 
+  auto& token = push();
+  token.mark = INPUT.mark();
+
   if (indent.type == IndentMarker::SEQ) {
-    push(Token::BLOCK_SEQ_END, INPUT.mark());
+    token.type = Token::BLOCK_SEQ_END;
   } else if (indent.type == IndentMarker::MAP) {
-    push(Token::BLOCK_MAP_END, INPUT.mark());
+    token.type = Token::BLOCK_MAP_END;
   }
 }
 
 void Scanner::ThrowParserException(const std::string& msg) const {
   Mark mark = Mark::null_mark();
-  if (!m_tokens.empty()) {
-    const Token& token = m_tokens.front();
+  if (m_tokenOut != m_tokens.end()) {
+    const Token& token = *m_tokenOut;
     mark = token.mark;
   }
   throw ParserException(mark, msg);

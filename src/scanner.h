@@ -9,12 +9,14 @@
 #include <stack>
 #include <string>
 #include <list>
+#include <forward_list>
 
 #include "scanscalar.h"
 #include "stream.h"
 #include "token.h"
 #include "yaml-cpp/mark.h"
 #include "exp.h"
+#include "plalloc.h"
 
 namespace YAML {
 class Node;
@@ -34,23 +36,35 @@ class Scanner {
 
   /** Removes the next token in the queue. */
   void pop();
+
   void pop_unsafe() {
-    m_freeTokens.splice(m_freeTokens.begin(), m_tokens, m_tokens.begin());
+    ++m_tokenOut;
   }
 
-  template <typename ...Args>
-  void push(Args&&... args) {
-    if (!m_freeTokens.empty()) {
-      m_tokens.splice(m_tokens.end(), m_freeTokens, m_freeTokens.begin());
-      m_tokens.back() = {std::forward<Args>(args)...};
+  Token& push() {
+    if (m_tokenOut != m_tokens.begin()) {
+      // Move free token to the end
+      auto last = m_tokens.begin();
+      m_tokens.splice_after(m_tokenIn, m_tokens, m_tokens.before_begin());
+      m_tokenIn = last;
     } else {
-      m_tokens.emplace_back(std::forward<Args>(args)...);
+      // Full
+      CreateToken();
     }
+    if (m_tokenOut == m_tokens.end()) {
+      m_tokenOut = m_tokenIn;
+    }
+
+    m_tokenIn->status = Token::VALID;
+    return *m_tokenIn;
   }
 
   /** Returns, but does not remove, the next token in the queue. */
   Token &peek();
-  Token &peek_unsafe() { return m_tokens.front(); }
+
+  Token &peek_unsafe() {
+    return *m_tokenPtr;
+  }
 
   /** Returns the current mark in the input stream. */
   Mark mark() const;
@@ -95,7 +109,6 @@ class Scanner {
   /** Closes out the stream, finish up, etc. */
   void EndStream();
 
-  Token *PushToken(Token::TYPE type);
 
   inline bool InFlowContext() const { return !m_flows.empty(); }
   bool InBlockContext() const { return m_flows.empty(); }
@@ -189,12 +202,22 @@ class Scanner {
   static int MatchScalarIndent(Exp::Source<4> in);
 
  private:
+
+  void CreateToken();
+  void InitTokens();
+
   // the stream
   Stream INPUT;
 
   // the output (tokens)
-  std::list<Token> m_tokens;
-  std::list<Token> m_freeTokens;
+  template<typename T>
+  using token_alloc = plalloc<T, 64>;
+
+  std::forward_list<Token, token_alloc<Token>> m_tokens;
+  //std::forward_list<Token> m_tokens;
+  std::forward_list<Token>::iterator m_tokenOut;
+  std::forward_list<Token>::iterator m_tokenIn;
+  Token* m_tokenPtr = nullptr;
 
   // state info
   bool m_startedStream, m_endedStream;
