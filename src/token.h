@@ -42,6 +42,8 @@ struct Token {
   };
 
   // data
+  Token() {}
+
   Token(TYPE type_, Mark mark_)
       : type(type_), status(VALID), data(0), mark(mark_) {}
 
@@ -58,6 +60,9 @@ struct Token {
     return out;
   }
 
+  void clearParam() {
+    if (params) { params->clear(); }
+  }
   void pushParam(std::string param) {
     if (!params) {
       params = std::unique_ptr<std::vector<std::string>>(new std::vector<std::string>);
@@ -67,7 +72,7 @@ struct Token {
 
   TYPE type;
   STATUS status;
-  int data;
+  char data;
   Mark mark;
   std::string value;
   std::unique_ptr<std::vector<std::string>> params;
