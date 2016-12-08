@@ -13,7 +13,6 @@ struct node_bucket {
         nodes.reserve(capacity);
     }
 
-    //__attribute__((noinline))
     ~node_bucket();
     void clear();
 
@@ -31,20 +30,7 @@ struct node_bucket {
     std::unique_ptr<node_bucket> next = nullptr;
 };
 
-void node_bucket::clear() {
-
-    nodes.clear();
-
-    if (next && !next->nodes.empty()) {
-        next->clear();
-    }
-}
-
-node_bucket::~node_bucket() {
-    if (!nodes.empty()) {
-        clear();
-    }
-}
+node_bucket::~node_bucket() {}
 
 node& memory::create_node() {
     node_bucket* insert = m_nodes.get();
@@ -116,7 +102,15 @@ void memory::merge(memory& rhs) {
 
 memory::memory() {}
 memory::~memory() {
-
+  // Important:
+  // First clear all node_data refs
+  for (node_bucket* b = m_nodes.get(); b; b = b->next.get()) {
+    b->nodes.clear();
+  }
+  // Then delete buckets
+  while (m_nodes) {
+    m_nodes = std::move(m_nodes->next);
+  }
 }
 }
 }
