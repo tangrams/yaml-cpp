@@ -153,11 +153,11 @@ class YAML_CPP_API node_data : public ref_counted {
 
   using data = typename std::aligned_storage<
     static_max<sizeof(std::string),
-	       sizeof(node_seq),
-	       sizeof(node_map)>::value,
+               sizeof(node_seq),
+               sizeof(node_map)>::value,
     static_max<alignof(std::string),
-	       alignof(node_seq),
-	       alignof(node_map)>::value>::type;
+               alignof(node_seq),
+               alignof(node_map)>::value>::type;
 
   data m_data;
 
