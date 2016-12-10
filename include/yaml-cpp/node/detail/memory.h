@@ -25,7 +25,7 @@ class YAML_CPP_API memory : public ref_counted {
   ~memory();
 
  private:
-  std::unique_ptr<node_bucket> m_nodes;
+  std::unique_ptr<node_bucket> buckets;
 };
 
 struct memory_ref : ref_counted {
