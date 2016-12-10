@@ -18,7 +18,8 @@ struct node_bucket {
 
     struct value {
         node n;
-        std::aligned_storage<sizeof(node_data),alignof(node_data)>::type data;
+        std::aligned_storage<sizeof(node_data),
+                             alignof(node_data)>::type data;
 
         value() {
             new (&data) node_data;
@@ -33,7 +34,7 @@ struct node_bucket {
 node_bucket::~node_bucket() {}
 
 node& memory::create_node() {
-    node_bucket* insert = m_nodes.get();
+    node_bucket* insert = buckets.get();
 
     for (node_bucket* b = insert; b; b = b->next.get()) {
         if (b->nodes.size() == b->nodes.capacity()) {
@@ -48,39 +49,39 @@ node& memory::create_node() {
         return insert->nodes.back().n;
     }
 
-    if (!m_nodes) {
-        m_nodes = std::unique_ptr<node_bucket>(new node_bucket(nullptr, 8));
+    if (!buckets) {
+        buckets = std::unique_ptr<node_bucket>(new node_bucket(nullptr, 8));
     } else {
-        m_nodes = std::unique_ptr<node_bucket>(new node_bucket(m_nodes.release(), node_bucket::size));
+        buckets = std::unique_ptr<node_bucket>(new node_bucket(buckets.release(), node_bucket::size));
     }
-    m_nodes->nodes.emplace_back();
-    return m_nodes->nodes.back().n;
+    buckets->nodes.emplace_back();
+    return buckets->nodes.back().n;
 }
 
 void memory::merge(memory& rhs) {
 
-    if (rhs.m_nodes.get() == m_nodes.get()) {
+    if (rhs.buckets.get() == buckets.get()) {
         return;
     }
-    if (!rhs.m_nodes) {
+    if (!rhs.buckets) {
         return;
     }
 
-    if (!m_nodes) {
-        m_nodes.reset(rhs.m_nodes.release());
+    if (!buckets) {
+        buckets.reset(rhs.buckets.release());
         return;
     }
 
     // last before filled bucket
     node_bucket* insert = nullptr;
-    for (node_bucket* b = m_nodes.get(); b; b = b->next.get()) {
+    for (node_bucket* b = buckets.get(); b; b = b->next.get()) {
         if (b->nodes.size() == b->nodes.capacity()) {
             break;
         }
         insert = b;
     }
 
-    node_bucket* last = rhs.m_nodes.get();
+    node_bucket* last = rhs.buckets.get();
     for (node_bucket* b = last; b; b = b->next.get()) {
         last = b;
     }
@@ -88,10 +89,10 @@ void memory::merge(memory& rhs) {
     node_bucket* appendix = nullptr;
     if (insert) {
         appendix = insert->next.release();
-        insert->next.reset(rhs.m_nodes.release());
+        insert->next.reset(rhs.buckets.release());
     } else {
-        appendix = m_nodes.release();
-        m_nodes.reset(rhs.m_nodes.release());
+        appendix = buckets.release();
+        buckets.reset(rhs.buckets.release());
 
     }
 
@@ -104,12 +105,12 @@ memory::memory() {}
 memory::~memory() {
   // Important:
   // First clear all node_data refs
-  for (node_bucket* b = m_nodes.get(); b; b = b->next.get()) {
+  for (node_bucket* b = buckets.get(); b; b = b->next.get()) {
     b->nodes.clear();
   }
   // Then delete buckets
-  while (m_nodes) {
-    m_nodes = std::move(m_nodes->next);
+  while (buckets) {
+    buckets = std::move(buckets->next);
   }
 }
 }
