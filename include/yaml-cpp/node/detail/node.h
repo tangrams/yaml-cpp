@@ -47,14 +47,14 @@ class node {
     bool defined = rhs.is_defined();
     m_pRef = rhs.m_pRef;
     if (defined) {
-      mark_defined();
+      if (!is_defined()) mark_defined();
     }
   }
   void set_data(node&& rhs) {
     bool defined = rhs.is_defined();
     m_pRef = std::move(rhs.m_pRef);
     if (defined) {
-      mark_defined();
+      if (!is_defined()) mark_defined();
     }
   }
 
@@ -66,25 +66,25 @@ class node {
     m_pRef->set_type(type);
   }
   void set_null() {
-    mark_defined();
+    if (!is_defined()) mark_defined();
     m_pRef->set_null();
   }
   void set_scalar(const std::string& scalar) {
-    mark_defined();
+    if (!is_defined()) mark_defined();
     m_pRef->set_scalar(scalar);
   }
   void set_scalar(std::string&& scalar) {
-    mark_defined();
+    if (!is_defined()) mark_defined();
     m_pRef->set_scalar(std::move(scalar));
   }
   void set_tag(const std::string& tag) {
-    mark_defined();
+    if (!is_defined()) mark_defined();
     m_pRef->set_tag(tag);
   }
 
   // style
   void set_style(EmitterStyle::value style) {
-    mark_defined();
+    if (!is_defined()) mark_defined();
     m_pRef->set_style(style);
   }
 
@@ -154,30 +154,9 @@ class node {
   }
 
  private:
-  void mark_defined() {
-    if (is_defined())
-      return;
+  void mark_defined();
 
-    m_pRef->mark_defined();
-
-    if (m_dependencies) {
-      for (auto& it : *m_dependencies) {
-        it->mark_defined();
-      }
-      m_dependencies.reset();
-    }
-  }
-
-  void add_dependency(node& rhs) {
-    if (is_defined())
-      rhs.mark_defined();
-    else {
-      if (!m_dependencies) {
-        m_dependencies = std::unique_ptr<nodes>(new nodes);
-      }
-      m_dependencies->insert(&rhs);
-    }
-  }
+  void add_dependency(node& rhs);
 
   mutable node_data_ref m_pRef;
   typedef std::set<node*> nodes;
