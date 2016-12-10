@@ -1,3 +1,4 @@
+#include "yaml-cpp/exceptions.h"
 #include "yaml-cpp/node/node.h"
 #include "yaml-cpp/node/detail/node.h"
 #include "yaml-cpp/nodebuilder.h"
@@ -9,6 +10,9 @@ Node Clone(const Node& node) {
   NodeBuilder builder;
   events.Emit(builder);
   return builder.Root();
+}
+void Node::ThrowInvalidNode() const {
+  throw InvalidNode();
 }
 
 namespace detail {
