@@ -63,7 +63,7 @@ class YAML_CPP_API node_data : public ref_counted {
     if (m_type == NodeType::Scalar)
       return *reinterpret_cast<const std::string*>(&m_data);
 
-    return empty_scalar;
+    return empty_scalar();
   }
   const std::string& tag() const { return m_tag ? *m_tag : tag_none; }
 
@@ -154,11 +154,11 @@ class YAML_CPP_API node_data : public ref_counted {
 
   using data = typename std::aligned_storage<
     static_max<sizeof(std::string),
-	       sizeof(node_seq),
-	       sizeof(node_map)>::value,
+               sizeof(node_seq),
+               sizeof(node_map)>::value,
     static_max<alignof(std::string),
-	       alignof(node_seq),
-	       alignof(node_map)>::value>::type;
+               alignof(node_seq),
+               alignof(node_map)>::value>::type;
 
   data m_data;
 

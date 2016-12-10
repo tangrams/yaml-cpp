@@ -136,7 +136,10 @@ class YAML_CPP_API Node {
   mutable detail::shared_memory m_pMemory;
   mutable detail::node* m_pNode;
 
-  bool isValid() const { return m_pMemory; }
+  void ThrowOnInvalid() const;
+  void ThrowInvalidNode() const;
+  bool isValid() const { return m_pMemory != nullptr; }
+
   void mergeMemory(const Node& rhs) const;
   detail::node& node() {
     return *m_pNode;
