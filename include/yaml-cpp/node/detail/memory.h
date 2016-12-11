@@ -18,7 +18,7 @@ namespace detail {
 class YAML_CPP_API memory : public ref_counted {
  public:
   node& create_node();
-  void merge(memory&& rhs);
+  void merge(memory& rhs);
 
   memory();
   ~memory();
@@ -28,20 +28,25 @@ class YAML_CPP_API memory : public ref_counted {
   Nodes m_nodes;
 };
 
-typedef ref_holder<memory> shared_memory;
+struct memory_ref : ref_counted {
 
-class YAML_CPP_API memory_holder : public ref_counted {
- public:
-  memory_holder();
-  ~memory_holder();
+  ref_holder<memory> m_ptr;
 
-  node& create_node() { return m_pMemory->create_node(); }
-  void merge(memory_holder& rhs);
+  memory_ref() : m_ptr(new memory) {}
+  ~memory_ref() {}
 
- private:
-  shared_memory m_pMemory;
+  node& create_node() { return m_ptr->create_node(); }
+
+  void merge(memory_ref& rhs) {
+    if (m_ptr == rhs.m_ptr) {
+       return;
+    }
+    m_ptr->merge(*rhs.m_ptr);
+    rhs.m_ptr = m_ptr;
+  };
 };
 
-typedef ref_holder<memory_holder> shared_memory_holder;
+typedef ref_holder<memory_ref> shared_memory;
+
 }
 }
