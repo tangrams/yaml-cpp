@@ -9,7 +9,7 @@ namespace detail {
 template <typename Key, typename Enable = void>
 struct get_idx {
   static node* get(const std::vector<node*>& /* sequence */,
-                   const Key& /* key */, shared_memory_holder /* pMemory */) {
+                   const Key& /* key */, shared_memory /* pMemory */) {
     return 0;
   }
 };
@@ -19,12 +19,12 @@ struct get_idx<Key,
                typename std::enable_if<std::is_unsigned<Key>::value &&
                                        !std::is_same<Key, bool>::value>::type> {
   static node* get(const std::vector<node*>& sequence, const Key& key,
-                   shared_memory_holder /* pMemory */) {
+                   shared_memory /* pMemory */) {
     return key < sequence.size() ? sequence[key] : 0;
   }
 
   static node* get(std::vector<node*>& sequence, const Key& key,
-                   shared_memory_holder pMemory) {
+                   shared_memory pMemory) {
     if (key > sequence.size() || (key > 0 && !sequence[key - 1]->is_defined()))
       return 0;
     if (key == sequence.size())
@@ -36,13 +36,13 @@ struct get_idx<Key,
 template <typename Key>
 struct get_idx<Key, typename std::enable_if<std::is_signed<Key>::value>::type> {
   static node* get(const std::vector<node*>& sequence, const Key& key,
-                   shared_memory_holder pMemory) {
+                   shared_memory pMemory) {
     return key >= 0 ? get_idx<std::size_t>::get(
                           sequence, static_cast<std::size_t>(key), pMemory)
                     : 0;
   }
   static node* get(std::vector<node*>& sequence, const Key& key,
-                   shared_memory_holder pMemory) {
+                   shared_memory pMemory) {
     return key >= 0 ? get_idx<std::size_t>::get(
                           sequence, static_cast<std::size_t>(key), pMemory)
                     : 0;
@@ -81,7 +81,7 @@ struct remove_idx<Key,
 };
 
 template <typename T>
-inline bool node::equals(const T& rhs, shared_memory_holder pMemory) {
+inline bool node::equals(const T& rhs, shared_memory pMemory) {
   T lhs;
   if (convert<T>::decode(Node(*this, pMemory), lhs)) {
     return lhs == rhs;
@@ -89,14 +89,13 @@ inline bool node::equals(const T& rhs, shared_memory_holder pMemory) {
   return false;
 }
 
-inline bool node::equals(const char* rhs, shared_memory_holder pMemory) {
+inline bool node::equals(const char* rhs, shared_memory pMemory) {
   return equals<std::string>(rhs, pMemory);
 }
 
 // indexing
 template <typename Key>
-inline node* node_data::get(const Key& key,
-                            shared_memory_holder pMemory) const {
+inline node* node_data::get(const Key& key, shared_memory pMemory) const {
   switch (m_type) {
     case NodeType::Map:
       break;
@@ -121,7 +120,7 @@ inline node* node_data::get(const Key& key,
 }
 
 template <typename Key>
-inline node& node_data::get(const Key& key, shared_memory_holder pMemory) {
+inline node& node_data::get(const Key& key, shared_memory pMemory) {
   switch (m_type) {
     case NodeType::Map:
       break;
@@ -152,7 +151,7 @@ inline node& node_data::get(const Key& key, shared_memory_holder pMemory) {
 }
 
 template <typename Key>
-inline bool node_data::remove(const Key& key, shared_memory_holder pMemory) {
+inline bool node_data::remove(const Key& key, shared_memory pMemory) {
   if (m_type == NodeType::Sequence) {
     return remove_idx<Key>::remove(m_sequence, key);
   } else if (m_type == NodeType::Map) {
@@ -179,7 +178,7 @@ inline bool node_data::remove(const Key& key, shared_memory_holder pMemory) {
 // map
 template <typename Key, typename Value>
 inline void node_data::force_insert(const Key& key, const Value& value,
-                                    shared_memory_holder pMemory) {
+                                    shared_memory pMemory) {
   switch (m_type) {
     case NodeType::Map:
       break;
@@ -198,11 +197,12 @@ inline void node_data::force_insert(const Key& key, const Value& value,
 }
 
 template <typename T>
-inline node& node_data::convert_to_node(const T& rhs,
-                                        shared_memory_holder pMemory) {
+inline node& node_data::convert_to_node(const T& rhs, shared_memory pMemory) {
   Node value = convert<T>::encode(rhs);
   value.EnsureNodeExists();
-  pMemory->merge(*value.m_pMemory);
+  if (pMemory != value.m_pMemory) {
+      pMemory->merge(*value.m_pMemory);
+  }
   return *value.m_pNode;
 }
 }

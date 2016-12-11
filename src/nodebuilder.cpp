@@ -11,7 +11,7 @@ namespace YAML {
 struct Mark;
 
 NodeBuilder::NodeBuilder()
-    : m_pMemory(new detail::memory_holder), m_pRoot(nullptr), m_mapDepth(0) {
+    : m_pMemory(new detail::memory_ref), m_pRoot(nullptr), m_mapDepth(0) {
   m_anchors.push_back(nullptr);  // since the anchors start at 1
 }
 
