@@ -7,7 +7,7 @@
 #include "yaml-cpp/mark.h"
 #include "yaml-cpp/node/detail/bool_type.h"
 #include "yaml-cpp/node/detail/iterator_fwd.h"
-#include "yaml-cpp/node/ptr.h"
+#include "yaml-cpp/node/detail/memory.h"
 #include "yaml-cpp/node/type.h"
 
 namespace YAML {
@@ -30,17 +30,19 @@ class YAML_CPP_API Node {
   friend class detail::iterator_base;
   template <typename T, typename S>
   friend struct as_if;
+  template <typename T>
+  friend struct convert;
 
   typedef YAML::iterator iterator;
   typedef YAML::const_iterator const_iterator;
 
   Node();
+  ~Node();
+  Node(const Node& rhs);
+  Node(Node&& rhs);
   explicit Node(NodeType::value type);
   template <typename T>
   explicit Node(const T& rhs);
-  explicit Node(const detail::iterator_value& rhs);
-  Node(const Node& rhs);
-  ~Node();
 
   YAML::Mark Mark() const;
   NodeType::value Type() const;
@@ -74,7 +76,12 @@ class YAML_CPP_API Node {
   template <typename T>
   Node& operator=(const T& rhs);
   Node& operator=(const Node& rhs);
+
+  // Reset Node to another Node (or create new Node)
   void reset(const Node& rhs = Node());
+
+  // Set Node to undefined
+  void clear();
 
   // size/iterator
   std::size_t size() const;
@@ -109,7 +116,12 @@ class YAML_CPP_API Node {
  private:
   enum Zombie { ZombieNode };
   explicit Node(Zombie);
-  explicit Node(detail::node& node, detail::shared_memory_holder pMemory);
+  explicit Node(detail::node& node, detail::shared_memory pMemory);
+
+  explicit Node(const detail::iterator_value& rhs, detail::shared_memory memory);
+
+  template <typename T>
+  inline Node(const T& rhs, detail::shared_memory memory);
 
   void EnsureNodeExists() const;
 
@@ -118,13 +130,20 @@ class YAML_CPP_API Node {
   void Assign(const char* rhs);
   void Assign(char* rhs);
 
-  void AssignData(const Node& rhs);
   void AssignNode(const Node& rhs);
 
  private:
-  bool m_isValid;
-  mutable detail::shared_memory_holder m_pMemory;
+  mutable detail::shared_memory m_pMemory;
   mutable detail::node* m_pNode;
+
+  void ThrowOnInvalid() const;
+  void ThrowInvalidNode() const;
+  bool isValid() const { return m_pMemory != nullptr; }
+
+  void mergeMemory(const Node& rhs) const;
+  detail::node& node() {
+    return *m_pNode;
+  }
 };
 
 YAML_CPP_API bool operator==(const Node& lhs, const Node& rhs);

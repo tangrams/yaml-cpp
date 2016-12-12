@@ -1,21 +1,28 @@
 #pragma once
 
-#include <stack>
+#include <vector>
 
 #include "yaml-cpp/anchor.h"
 #include "yaml-cpp/emitterstyle.h"
 #include "yaml-cpp/eventhandler.h"
+#include "yaml-cpp/node/detail/memory.h"
 
 namespace YAML {
+namespace detail {
+class node;
+}  // namespace detail
 struct Mark;
 }  // namespace YAML
 
 namespace YAML {
-class Emitter;
+class Node;
 
-class EmitFromEvents : public EventHandler {
+class NodeBuilder : public EventHandler {
  public:
-  EmitFromEvents(Emitter& emitter);
+  NodeBuilder();
+  ~NodeBuilder() override;
+
+  Node Root();
 
   void OnDocumentStart(const Mark& mark) override;
   void OnDocumentEnd() override;
@@ -34,15 +41,21 @@ class EmitFromEvents : public EventHandler {
   void OnMapEnd() override;
 
  private:
-  void BeginNode();
-  void EmitProps(const std::string& tag, anchor_t anchor);
+  detail::node& Push(const Mark& mark, anchor_t anchor);
+  void Push(detail::node& node);
+  void Pop();
+  void RegisterAnchor(anchor_t anchor, detail::node& node);
 
  private:
-  Emitter& m_emitter;
+  detail::shared_memory m_pMemory;
+  detail::node* m_pRoot;
 
-  struct State {
-    enum value { WaitingForSequenceEntry, WaitingForKey, WaitingForValue };
-  };
-  std::stack<State::value> m_stateStack;
+  typedef std::vector<detail::node*> Nodes;
+  Nodes m_stack;
+  Nodes m_anchors;
+
+  typedef std::pair<detail::node*, bool> PushedKey;
+  std::vector<PushedKey> m_keys;
+  std::size_t m_mapDepth;
 };
 }

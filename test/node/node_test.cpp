@@ -361,8 +361,13 @@ TEST(NodeTest, KeyNodeExitsScope) {
     Node temp("Hello, world");
     node[temp] = 0;
   }
+
+  EXPECT_TRUE(node.IsMap());
+  EXPECT_EQ(node.size(), 1);
+
   for (Node::const_iterator it = node.begin(); it != node.end(); ++it) {
-    (void)it;
+    EXPECT_EQ(it->first.Scalar(), "Hello, world");
+    EXPECT_EQ(it->second.Scalar(), "0");
   }
 }
 
@@ -502,5 +507,82 @@ TEST_F(NodeEmitterTest, NestFlowMapListNode) {
 
   ExpectOutput("{position: [1.01, 2.01, 3.01]}", mapNode);
 }
+
+TEST(NodeTest, ChildNodesAliveAfterOwnerNodeExitsScope) {
+
+  Node node;
+  {
+    Node tmp;
+    Node n = tmp["Message"];
+    n["Hello"] = "World";
+    node = tmp;
+  }
+
+  EXPECT_TRUE(node.IsMap());
+  EXPECT_TRUE(node["Message"].IsMap());
+  EXPECT_TRUE(node["Message"]["Hello"].IsScalar());
+  EXPECT_EQ(node["Message"]["Hello"].Scalar(), "World");
+}
+
+TEST(NodeTest, AdvancedMemoryMerging) {
+
+  {
+    Node src;
+    src["A"] = "a";
+    {
+      Node dst;
+      dst["B"] = "b";
+      dst = src["A"];
+    }
+    printf("dropped dst\n");
+    EXPECT_TRUE(src.IsMap());
+    EXPECT_EQ(src["A"].Scalar(), "a");
+  }
+  {
+    Node src;
+    src["A"] = "a";
+    {
+      Node dst;
+      dst["A"] = src["A"];
+    }
+    printf("dropped dst\n");
+    EXPECT_TRUE(src.IsMap());
+    EXPECT_EQ(src["A"].Scalar(), "a");
+  }
+  {
+    Node src;
+    src["A"] = "a";
+    {
+      Node dst;
+      for (const auto& entry : src) {
+        dst[entry.first] = entry.second;
+      }
+    }
+    printf("dropped dst\n");
+    EXPECT_TRUE(src.IsMap());
+    EXPECT_EQ(src["A"].Scalar(), "a");
+  }
+}
+
+std::unique_ptr<Node> s_node;
+
+TEST(NodeTest, StaticNodeTest) {
+
+  Node node;
+  {
+    Node tmp;
+    Node n = tmp["Message"];
+    n["Hello"] = "World";
+    node = tmp;
+  }
+
+  EXPECT_TRUE(node.IsMap());
+  EXPECT_TRUE(node["Message"].IsMap());
+  EXPECT_TRUE(node["Message"]["Hello"].IsScalar());
+  EXPECT_EQ(node["Message"]["Hello"].Scalar(), "World");
+
+  s_node = std::unique_ptr<Node>(new Node(node));
+}
+
 }
 }

@@ -7,7 +7,7 @@ struct Directives;
 struct Token;
 
 struct Tag {
-  enum TYPE {
+  enum TYPE : char {
     VERBATIM,
     PRIMARY_HANDLE,
     SECONDARY_HANDLE,

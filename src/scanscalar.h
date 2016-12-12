@@ -1,9 +1,9 @@
 #pragma once
 
 #include <string>
+#include <functional>
 
-#include "regex_yaml.h"
-#include "stream.h"
+#include "exp.h"
 
 namespace YAML {
 enum CHOMP { STRIP = -1, CLIP, KEEP };
@@ -12,7 +12,8 @@ enum FOLD { DONT_FOLD, FOLD_BLOCK, FOLD_FLOW };
 
 struct ScanScalarParams {
   ScanScalarParams()
-      : end(nullptr),
+    :   end(nullptr),
+        indentFn(nullptr),
         eatEnd(false),
         indent(0),
         detectIndent(false),
@@ -26,8 +27,10 @@ struct ScanScalarParams {
         leadingSpaces(false) {}
 
   // input:
-  const RegEx* end;   // what condition ends this scalar?
-                      // unowned.
+  //std::function<int(const Stream& in)> end;   // what condition ends this scalar?
+  int (*end)(Exp::Source<4> in);   // what condition ends this scalar?
+  int (*indentFn)(Exp::Source<4> in);   // what condition ends this scalar?
+
   bool eatEnd;        // should we eat that condition when we see it?
   int indent;         // what level of indentation should be eaten and ignored?
   bool detectIndent;  // should we try to autodetect the indent?
@@ -50,5 +53,4 @@ struct ScanScalarParams {
   bool leadingSpaces;
 };
 
-std::string ScanScalar(Stream& INPUT, ScanScalarParams& info);
 }

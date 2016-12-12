@@ -9,7 +9,7 @@ namespace detail {
 template <typename Key, typename Enable = void>
 struct get_idx {
   static node* get(const std::vector<node*>& /* sequence */,
-                   const Key& /* key */, shared_memory_holder /* pMemory */) {
+                   const Key& /* key */, shared_memory /* pMemory */) {
     return 0;
   }
 };
@@ -19,12 +19,12 @@ struct get_idx<Key,
                typename std::enable_if<std::is_unsigned<Key>::value &&
                                        !std::is_same<Key, bool>::value>::type> {
   static node* get(const std::vector<node*>& sequence, const Key& key,
-                   shared_memory_holder /* pMemory */) {
+                   shared_memory /* pMemory */) {
     return key < sequence.size() ? sequence[key] : 0;
   }
 
   static node* get(std::vector<node*>& sequence, const Key& key,
-                   shared_memory_holder pMemory) {
+                   shared_memory pMemory) {
     if (key > sequence.size())
       return 0;
     if (key == sequence.size())
@@ -36,13 +36,13 @@ struct get_idx<Key,
 template <typename Key>
 struct get_idx<Key, typename std::enable_if<std::is_signed<Key>::value>::type> {
   static node* get(const std::vector<node*>& sequence, const Key& key,
-                   shared_memory_holder pMemory) {
+                   shared_memory pMemory) {
     return key >= 0 ? get_idx<std::size_t>::get(
                           sequence, static_cast<std::size_t>(key), pMemory)
                     : 0;
   }
   static node* get(std::vector<node*>& sequence, const Key& key,
-                   shared_memory_holder pMemory) {
+                   shared_memory pMemory) {
     return key >= 0 ? get_idx<std::size_t>::get(
                           sequence, static_cast<std::size_t>(key), pMemory)
                     : 0;
@@ -50,7 +50,7 @@ struct get_idx<Key, typename std::enable_if<std::is_signed<Key>::value>::type> {
 };
 
 template <typename T>
-inline bool node::equals(const T& rhs, shared_memory_holder pMemory) {
+inline bool node::equals(const T& rhs, shared_memory pMemory) {
   T lhs;
   if (convert<T>::decode(Node(*this, pMemory), lhs)) {
     return lhs == rhs;
@@ -58,14 +58,13 @@ inline bool node::equals(const T& rhs, shared_memory_holder pMemory) {
   return false;
 }
 
-inline bool node::equals(const char* rhs, shared_memory_holder pMemory) {
+inline bool node::equals(const char* rhs, shared_memory pMemory) {
   return equals<std::string>(rhs, pMemory);
 }
 
 // indexing
 template <typename Key>
-inline node* node_data::get(const Key& key,
-                            shared_memory_holder pMemory) const {
+inline node* node_data::get(const Key& key, shared_memory pMemory) const {
   switch (m_type) {
     case NodeType::Map:
       break;
@@ -73,14 +72,14 @@ inline node* node_data::get(const Key& key,
     case NodeType::Null:
       return NULL;
     case NodeType::Sequence:
-      if (node* pNode = get_idx<Key>::get(m_sequence, key, pMemory))
+      if (node* pNode = get_idx<Key>::get(seq(), key, pMemory))
         return pNode;
       return NULL;
     case NodeType::Scalar:
       throw BadSubscript();
   }
 
-  for (node_map::const_iterator it = m_map.begin(); it != m_map.end(); ++it) {
+  for (node_map::const_iterator it = map().begin(); it != map().end(); ++it) {
     if (it->first->equals(key, pMemory)) {
       return it->second;
     }
@@ -90,25 +89,25 @@ inline node* node_data::get(const Key& key,
 }
 
 template <typename Key>
-inline node& node_data::get(const Key& key, shared_memory_holder pMemory) {
+inline node& node_data::get(const Key& key, shared_memory pMemory) {
+
   switch (m_type) {
     case NodeType::Map:
       break;
     case NodeType::Undefined:
     case NodeType::Null:
+      set_type(NodeType::Sequence);
     case NodeType::Sequence:
-      if (node* pNode = get_idx<Key>::get(m_sequence, key, pMemory)) {
-        m_type = NodeType::Sequence;
+      if (node* pNode = get_idx<Key>::get(seq(), key, pMemory)) {
         return *pNode;
       }
-
       convert_to_map(pMemory);
       break;
     case NodeType::Scalar:
       throw BadSubscript();
   }
 
-  for (node_map::const_iterator it = m_map.begin(); it != m_map.end(); ++it) {
+  for (node_map::const_iterator it = map().begin(); it != map().end(); ++it) {
     if (it->first->equals(key, pMemory)) {
       return *it->second;
     }
@@ -121,21 +120,13 @@ inline node& node_data::get(const Key& key, shared_memory_holder pMemory) {
 }
 
 template <typename Key>
-inline bool node_data::remove(const Key& key, shared_memory_holder pMemory) {
+inline bool node_data::remove(const Key& key, shared_memory pMemory) {
   if (m_type != NodeType::Map)
     return false;
 
-  kv_pairs::iterator it = m_undefinedPairs.begin();
-  while (it != m_undefinedPairs.end()) {
-    kv_pairs::iterator jt = std::next(it);
-    if (it->first->equals(key, pMemory))
-      m_undefinedPairs.erase(it);
-    it = jt;
-  }
-
-  for (node_map::iterator it = m_map.begin(); it != m_map.end(); ++it) {
+  for (node_map::iterator it = map().begin(); it != map().end(); ++it) {
     if (it->first->equals(key, pMemory)) {
-      m_map.erase(it);
+      map().erase(it);
       return true;
     }
   }
@@ -146,7 +137,7 @@ inline bool node_data::remove(const Key& key, shared_memory_holder pMemory) {
 // map
 template <typename Key, typename Value>
 inline void node_data::force_insert(const Key& key, const Value& value,
-                                    shared_memory_holder pMemory) {
+                                    shared_memory pMemory) {
   switch (m_type) {
     case NodeType::Map:
       break;
@@ -165,12 +156,8 @@ inline void node_data::force_insert(const Key& key, const Value& value,
 }
 
 template <typename T>
-inline node& node_data::convert_to_node(const T& rhs,
-                                        shared_memory_holder pMemory) {
-  Node value = convert<T>::encode(rhs);
-  value.EnsureNodeExists();
-  pMemory->merge(*value.m_pMemory);
-  return *value.m_pNode;
+inline node& node_data::convert_to_node(const T& rhs, shared_memory pMemory) {
+  return *Node(rhs, pMemory).m_pNode;
 }
 }
 }

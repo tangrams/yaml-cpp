@@ -1,7 +1,7 @@
 #include <assert.h>
 #include <cassert>
 
-#include "nodebuilder.h"
+#include "yaml-cpp/nodebuilder.h"
 #include "yaml-cpp/node/detail/node.h"
 #include "yaml-cpp/node/impl.h"
 #include "yaml-cpp/node/node.h"
@@ -11,7 +11,7 @@ namespace YAML {
 struct Mark;
 
 NodeBuilder::NodeBuilder()
-    : m_pMemory(new detail::memory_holder), m_pRoot(0), m_mapDepth(0) {
+    : m_pMemory(new detail::memory_ref), m_pRoot(0), m_mapDepth(0) {
   m_anchors.push_back(0);  // since the anchors start at 1
 }
 
@@ -41,9 +41,9 @@ void NodeBuilder::OnAlias(const Mark& /* mark */, anchor_t anchor) {
 }
 
 void NodeBuilder::OnScalar(const Mark& mark, const std::string& tag,
-                           anchor_t anchor, const std::string& value) {
+                           anchor_t anchor, std::string value) {
   detail::node& node = Push(mark, anchor);
-  node.set_scalar(value);
+  node.set_scalar(std::move(value));
   node.set_tag(tag);
   Pop();
 }

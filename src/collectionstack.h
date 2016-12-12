@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stack>
+#include <vector>
 #include <cassert>
 
 namespace YAML {
@@ -25,6 +26,6 @@ class CollectionStack {
   }
 
  private:
-  std::stack<CollectionType::value> collectionStack;
+  std::stack<CollectionType::value, std::vector<CollectionType::value>> collectionStack;
 };
 }

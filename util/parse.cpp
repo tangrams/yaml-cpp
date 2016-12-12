@@ -26,14 +26,12 @@ class NullEventHandler : public YAML::EventHandler {
   virtual void OnNull(const YAML::Mark&, YAML::anchor_t) {}
   virtual void OnAlias(const YAML::Mark&, YAML::anchor_t) {}
   virtual void OnScalar(const YAML::Mark&, const std::string&, YAML::anchor_t,
-                        const std::string&) {}
-
-  virtual void OnSequenceStart(const YAML::Mark&, const std::string&,
-                               YAML::anchor_t) {}
+                        std::string) {}
+  virtual void OnSequenceStart(const YAML::Mark&, const std::string&, YAML::anchor_t,
+                               YAML::EmitterStyle::value style) {}
   virtual void OnSequenceEnd() {}
-
-  virtual void OnMapStart(const YAML::Mark&, const std::string&,
-                          YAML::anchor_t) {}
+  virtual void OnMapStart(const YAML::Mark&, const std::string&, YAML::anchor_t,
+                          YAML::EmitterStyle::value style) {}
   virtual void OnMapEnd() {}
 };
 

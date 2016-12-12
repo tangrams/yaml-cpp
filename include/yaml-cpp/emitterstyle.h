@@ -2,6 +2,6 @@
 
 namespace YAML {
 struct EmitterStyle {
-  enum value { Default, Block, Flow };
+  enum value : char { Default, Block, Flow };
 };
 }

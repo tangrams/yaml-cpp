@@ -19,7 +19,7 @@ Tag::Tag(const Token& token) : type(static_cast<TYPE>(token.data)) {
       break;
     case NAMED_HANDLE:
       handle = token.value;
-      value = token.params[0];
+      value = (*token.params)[0];
       break;
     case NON_SPECIFIC:
       break;

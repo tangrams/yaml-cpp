@@ -4,11 +4,12 @@
 #include <vector>
 
 #include "yaml-cpp/anchor.h"
-#include "yaml-cpp/node/ptr.h"
+#include "yaml-cpp/node/detail/memory.h"
 
 namespace YAML {
 namespace detail {
 class node;
+class node_data;
 }  // namespace detail
 }  // namespace YAML
 
@@ -34,7 +35,7 @@ class NodeEvents {
     anchor_t _CreateNewAnchor() { return ++m_curAnchor; }
 
    private:
-    typedef std::map<const detail::node_ref*, anchor_t> AnchorByIdentity;
+    typedef std::map<const detail::node_data*, anchor_t> AnchorByIdentity;
     AnchorByIdentity m_anchorByIdentity;
 
     anchor_t m_curAnchor;
@@ -46,10 +47,10 @@ class NodeEvents {
   bool IsAliased(const detail::node& node) const;
 
  private:
-  detail::shared_memory_holder m_pMemory;
+  detail::shared_memory m_pMemory;
   detail::node* m_root;
 
-  typedef std::map<const detail::node_ref*, int> RefCount;
+  typedef std::map<const detail::node_data*, int> RefCount;
   RefCount m_refCount;
 };
 }
