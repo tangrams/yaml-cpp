@@ -139,14 +139,12 @@ void Scanner::ScanNextToken() {
   if (c == Keys::FlowSeqStart ||
       c == Keys::FlowMapStart) {
     return ScanFlowStart();
-  }
 
-  if (c == Keys::FlowSeqEnd ||
+  } else if (c == Keys::FlowSeqEnd ||
       c == Keys::FlowMapEnd) {
     return ScanFlowEnd();
-  }
 
-  if (c == Keys::FlowEntry) {
+  } else if (c == Keys::FlowEntry) {
     return ScanFlowEntry();
   }
 
@@ -170,55 +168,47 @@ void Scanner::ScanNextToken() {
   INPUT.LookaheadBuffer(input);
   // block/map stuff
   if (Exp::BlockEntry::Matches(input)) {
-    return ScanBlockEntry();
-  }
+    ScanBlockEntry();
 
-  if (InBlockContext() ?
+  } else if (InBlockContext() ?
       // TODO these are the same?
       Exp::Key::Matches(input) :
       Exp::KeyInFlow::Matches(input)) {
-    return ScanKey();
-  }
+    ScanKey();
 
-  if ((InBlockContext() && Exp::Value::Matches(input)) ||
-      (m_canBeJSONFlow ?
-       Exp::ValueInJSONFlow::Matches(input) :
-       Exp::ValueInFlow::Matches(input))) {
-    return ScanValue();
-  }
+  } else if (InBlockContext() && Exp::Value::Matches(input)) {
+    ScanValue();
 
-  // alias/anchor
-  if (c == Keys::Alias ||
-      c == Keys::Anchor) {
-    return ScanAnchorOrAlias();
-  }
+  } else if (m_canBeJSONFlow && Exp::ValueInJSONFlow::Matches(input)) {
+    ScanValue();
 
-  // tag
-  if (c == Keys::Tag) {
-    return ScanTag();
-  }
+  } else if (!m_canBeJSONFlow && Exp::ValueInFlow::Matches(input)) {
+    ScanValue();
 
-  // special scalars
-  if (InBlockContext() && (c == Keys::LiteralScalar ||
-                           c == Keys::FoldedScalar)) {
-    return ScanBlockScalar();
-  }
+  }  else if (c == Keys::Alias || c == Keys::Anchor) {
+    ScanAnchorOrAlias();
 
-  if (c == '\'' || c == '\"') {
-    return ScanQuotedScalar();
-  }
+  } else if (c == Keys::Tag) {
+    ScanTag();
 
-  if (Exp::PlainScalarCommon::Matches(input)) {
-    // plain scalars
-    if (InBlockContext() ?
-        Exp::PlainScalar::Matches(input) :
-        Exp::PlainScalarInFlow::Matches(input)) {
-      return ScanPlainScalar();
-    }
-  }
+  } else if (InBlockContext() && (c == Keys::LiteralScalar ||
+                                  c == Keys::FoldedScalar)) {
+    // special scalars
+    ScanBlockScalar();
 
-  // don't know what it is!
-  throw ParserException(INPUT.mark(), ErrorMsg::UNKNOWN_TOKEN);
+  } else if  (c == '\'' || c == '\"') {
+    ScanQuotedScalar();
+
+  } else if (Exp::PlainScalarCommon::Matches(input) &&
+             ((InBlockContext() && Exp::PlainScalar::Matches(input)) ||
+              (InFlowContext() && Exp::PlainScalarInFlow::Matches(input)))) {
+
+    ScanPlainScalar();
+
+  } else {
+    // don't know what it is!
+    throw ParserException(INPUT.mark(), ErrorMsg::UNKNOWN_TOKEN);
+  }
 }
 
 void Scanner::ScanToNextToken() {
