@@ -190,12 +190,7 @@ inline void node_data::force_insert(const Key& key, const Value& value,
 
 template <typename T>
 inline node& node_data::convert_to_node(const T& rhs, shared_memory pMemory) {
-  Node value = convert<T>::encode(rhs);
-  value.EnsureNodeExists();
-  if (pMemory != value.m_pMemory) {
-      pMemory->merge(*value.m_pMemory);
-  }
-  return *value.m_pNode;
+  return *Node(rhs, pMemory).m_pNode;
 }
 }
 }
