@@ -132,8 +132,12 @@ class node {
   }
   node& get(node& key, shared_memory pMemory) {
     node& value = m_pRef->get(key, pMemory);
-    key.add_dependency(*this);
-    value.add_dependency(*this);
+    if (!key.is_defined() || !value.is_defined()) {
+      key.add_dependency(*this);
+      value.add_dependency(*this);
+    } else {
+      mark_defined();
+    }
     return value;
   }
   bool remove(node& key, shared_memory pMemory) {
