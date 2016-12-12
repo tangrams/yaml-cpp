@@ -50,13 +50,6 @@ class node {
       if (!is_defined()) mark_defined();
     }
   }
-  void set_data(node&& rhs) {
-    bool defined = rhs.is_defined();
-    m_pRef = std::move(rhs.m_pRef);
-    if (defined) {
-      if (!is_defined()) mark_defined();
-    }
-  }
 
   void set_mark(const Mark& mark) { m_pRef->set_mark(mark); }
 
