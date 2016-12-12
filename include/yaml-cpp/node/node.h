@@ -144,6 +144,11 @@ class YAML_CPP_API Node {
   detail::node& node() {
     return *m_pNode;
   }
+
+  void set(detail::node& node, detail::shared_memory& pMemory) {
+    m_pNode = &node;
+    if (m_pMemory != pMemory) { m_pMemory = pMemory; }
+  }
 };
 
 YAML_CPP_API bool operator==(const Node& lhs, const Node& rhs);
