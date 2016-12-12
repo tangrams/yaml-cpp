@@ -8,7 +8,18 @@
 #include <string>
 
 namespace YAML {
-inline Node::Node() : m_pMemory(new detail::memory_ref), m_pNode(NULL) {}
+
+inline Node::Node() :
+    m_pMemory(new detail::memory_ref),
+    m_pNode(nullptr) {
+}
+
+template <typename T>
+inline Node::Node(const T& rhs)
+    : m_pMemory(new detail::memory_ref),
+      m_pNode(nullptr) {
+    Assign(rhs);
+}
 
 inline Node::Node(NodeType::value type)
     : m_pMemory(new detail::memory_ref),
@@ -16,20 +27,30 @@ inline Node::Node(NodeType::value type)
   m_pNode->set_type(type);
 }
 
+
+inline Node::Node(const Node& rhs)
+    : m_pMemory(rhs.m_pMemory),
+      m_pNode(rhs.m_pNode) {
+}
+
+// Use by push_back(), operator=()
 template <typename T>
-inline Node::Node(const T& rhs)
-    : m_pMemory(new detail::memory_ref),
-      m_pNode(&(m_pMemory->create_node())) {
+inline Node::Node(const T& rhs, detail::shared_memory memory)
+    : m_pMemory(memory),
+      m_pNode(nullptr) {
   Assign(rhs);
 }
 
-inline Node::Node(const detail::iterator_value& rhs)
-    : m_pMemory(rhs.m_pMemory), m_pNode(rhs.m_pNode) {}
+inline Node::Node(const detail::iterator_value& rhs, detail::shared_memory memory)
+    : m_pMemory(memory), m_pNode(rhs.m_pNode) {
 
-inline Node::Node(const Node& rhs)
-    : m_pMemory(rhs.m_pMemory), m_pNode(rhs.m_pNode) {}
+    if (m_pMemory != rhs.m_pMemory) {
+      m_pMemory->merge(*rhs.m_pMemory);
+      rhs.m_pMemory = m_pMemory;
+  }
+}
 
-inline Node::Node(Zombie) : m_pMemory(nullptr), m_pNode(NULL) {}
+inline Node::Node(Zombie) : m_pMemory(nullptr), m_pNode(nullptr) {}
 
 inline Node::Node(Node&& rhs)
     : m_pMemory(std::move(rhs.m_pMemory)), m_pNode(rhs.m_pNode) {
@@ -45,7 +66,6 @@ inline void Node::EnsureNodeExists() const {
   if (!isValid())
     throw InvalidNode();
   if (!m_pNode) {
-    m_pMemory.reset(new detail::memory_ref);
     m_pNode = &m_pMemory->create_node();
     m_pNode->set_null();
   }
@@ -186,13 +206,6 @@ inline bool Node::is(const Node& rhs) const {
   return m_pNode->is(*rhs.m_pNode);
 }
 
-template <typename T>
-inline Node& Node::operator=(const T& rhs) {
-  if (!isValid())
-    throw InvalidNode();
-  Assign(rhs);
-  return *this;
-}
 
 inline void Node::reset(const YAML::Node& rhs) {
   if (!isValid() || !rhs.isValid())
@@ -201,74 +214,60 @@ inline void Node::reset(const YAML::Node& rhs) {
   m_pNode = rhs.m_pNode;
 }
 
-template <typename T>
-inline void Node::Assign(const T& rhs) {
+inline void Node::clear() {
   if (!isValid())
     throw InvalidNode();
-  AssignData(convert<T>::encode(rhs));
+
+  if (m_pNode) {
+    m_pNode->set_type(NodeType::Null);
+  } else {
+    EnsureNodeExists();
+  }
+}
+
+template <typename T>
+inline void Node::Assign(const T& rhs) {
+  EnsureNodeExists();
+  convert<T>::encode(rhs, *this);
 }
 
 template <>
 inline void Node::Assign(const std::string& rhs) {
-  if (!isValid())
-    throw InvalidNode();
   EnsureNodeExists();
   m_pNode->set_scalar(rhs);
 }
 
 inline void Node::Assign(const char* rhs) {
-  if (!isValid())
-    throw InvalidNode();
   EnsureNodeExists();
   m_pNode->set_scalar(rhs);
 }
 
 inline void Node::Assign(char* rhs) {
-  if (!isValid())
-    throw InvalidNode();
   EnsureNodeExists();
   m_pNode->set_scalar(rhs);
 }
 
+template <typename T>
+inline Node& Node::operator=(const T& rhs) {
+  if (!isValid())
+    throw InvalidNode();
+  Assign(rhs);
+  return *this;
+}
+
 inline Node& Node::operator=(const Node& rhs) {
-  if (!isValid() || !rhs.isValid())
+  if (!isValid() || !rhs.isValid()) {
     throw InvalidNode();
-  if (is(rhs))
-    return *this;
-  AssignNode(rhs);
-  return *this;
-}
-
-inline Node& Node::operator=(Node&& rhs) {
-  if (!isValid() || !rhs.isValid())
-    throw InvalidNode();
-  if (is(rhs))
-    return *this;
-
-  AssignNode(rhs);
-
-  return *this;
-}
-
-inline void Node::mergeMemory(const Node& rhs) const {
-  if (m_pMemory != rhs.m_pMemory) {
-      m_pMemory->merge(*rhs.m_pMemory);
-      rhs.m_pMemory = m_pMemory;
   }
-}
-inline void Node::AssignData(Node&& rhs) {
-  if (!isValid() || !rhs.isValid())
-    throw InvalidNode();
-  EnsureNodeExists();
-  rhs.EnsureNodeExists();
-
-  m_pNode->set_data(std::move(*rhs.m_pNode));
-  mergeMemory(rhs);
+  if (is(rhs)) {
+    return *this;
+  }
+  AssignNode(rhs);
+  return *this;
 }
 
 inline void Node::AssignNode(const Node& rhs) {
-  if (!isValid() || !rhs.isValid())
-    throw InvalidNode();
+
   rhs.EnsureNodeExists();
 
   if (!m_pNode) {
@@ -289,6 +288,13 @@ inline void Node::AssignNode(const Node& rhs) {
   m_pNode = rhs.m_pNode;
 }
 
+inline void Node::mergeMemory(const Node& rhs) const {
+  if (m_pMemory != rhs.m_pMemory) {
+      m_pMemory->merge(*rhs.m_pMemory);
+      rhs.m_pMemory = m_pMemory;
+  }
+}
+
 // size/iterator
 inline std::size_t Node::size() const {
   if (!isValid())
@@ -297,28 +303,31 @@ inline std::size_t Node::size() const {
 }
 
 inline const_iterator Node::begin() const {
-  if (!isValid())
-    return const_iterator();
-  return m_pNode ? const_iterator(m_pNode->begin(), m_pMemory)
-                 : const_iterator();
+  if (isValid() && m_pNode)
+    return const_iterator(m_pNode->begin(), m_pMemory);
+
+  return const_iterator();
 }
 
 inline iterator Node::begin() {
-  if (!isValid())
-    return iterator();
-  return m_pNode ? iterator(m_pNode->begin(), m_pMemory) : iterator();
+  if (isValid() && m_pNode)
+    return iterator(m_pNode->begin(), m_pMemory);
+
+  return iterator();
 }
 
 inline const_iterator Node::end() const {
-  if (!isValid())
-    return const_iterator();
-  return m_pNode ? const_iterator(m_pNode->end(), m_pMemory) : const_iterator();
+  if (isValid() && m_pNode)
+    return const_iterator(m_pNode->end(), m_pMemory);
+
+  return const_iterator();
 }
 
 inline iterator Node::end() {
-  if (!isValid())
-    return iterator();
-  return m_pNode ? iterator(m_pNode->end(), m_pMemory) : iterator();
+  if (isValid() && m_pNode)
+    return iterator(m_pNode->end(), m_pMemory);
+
+  return iterator();
 }
 
 // sequence
@@ -326,7 +335,11 @@ template <typename T>
 inline void Node::push_back(const T& rhs) {
   if (!isValid())
     throw InvalidNode();
-  push_back(Node(rhs));
+
+  Node value(rhs, m_pMemory);
+
+  EnsureNodeExists();
+  m_pNode->push_back(*value.m_pNode, m_pMemory);
 }
 
 inline void Node::push_back(const Node& rhs) {
