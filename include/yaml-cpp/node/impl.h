@@ -4,8 +4,10 @@
 #include "yaml-cpp/node/iterator.h"
 #include "yaml-cpp/node/detail/memory.h"
 #include "yaml-cpp/node/detail/node.h"
+#include "yaml-cpp/node/detail/string_view.h"
 #include "yaml-cpp/exceptions.h"
 #include <string>
+#include <cstring>
 
 namespace YAML {
 
@@ -362,30 +364,46 @@ struct to_value_t {
 };
 
 template <>
+struct to_value_t<std::string> {
+  explicit to_value_t(const std::string& t_) : t(t_) {}
+  const std::string& t;
+  typedef detail::string_view return_type;
+
+  const detail::string_view operator()() const {
+    return { t.data(), t.length() } ;
+  }
+};
+
+template <>
 struct to_value_t<const char*> {
   explicit to_value_t(const char* t_) : t(t_) {}
   const char* t;
-  typedef std::string return_type;
+  typedef detail::string_view return_type;
 
-  const std::string operator()() const { return t; }
+  const detail::string_view operator()() const {
+    return { t, strlen(t) } ;
+  }
 };
 
 template <>
 struct to_value_t<char*> {
   explicit to_value_t(char* t_) : t(t_) {}
   const char* t;
-  typedef std::string return_type;
+  typedef detail::string_view return_type;
 
-  const std::string operator()() const { return t; }
+  const detail::string_view operator()() const {
+    return { t, strlen(t) } ;
+  }
 };
 
 template <std::size_t N>
 struct to_value_t<char[N]> {
   explicit to_value_t(const char* t_) : t(t_) {}
   const char* t;
-  typedef std::string return_type;
-
-  const std::string operator()() const { return t; }
+  typedef detail::string_view return_type;
+  const detail::string_view operator()() const {
+        return { t, N-1 } ;
+  }
 };
 
 // converts C-strings to std::strings so they can be copied
@@ -398,10 +416,20 @@ inline typename to_value_t<T>::return_type to_value(const T& t) {
 // indexing
 template <typename Key>
 inline const Node Node::operator[](const Key& key) const {
+  return get(detail::to_value(key));
+}
+
+template <typename Key>
+inline Node Node::operator[](const Key& key) {
+  return get(detail::to_value(key));
+}
+
+template <typename Key>
+const Node Node::get(const Key& key) const {
   ThrowOnInvalid();
   EnsureNodeExists();
-  detail::node* value = static_cast<const detail::node&>(*m_pNode).get(
-      detail::to_value(key), m_pMemory);
+
+  detail::node* value = static_cast<const detail::node&>(*m_pNode).get(key, m_pMemory);
 
   if (!value) {
     return Node(ZombieNode);
@@ -410,10 +438,11 @@ inline const Node Node::operator[](const Key& key) const {
 }
 
 template <typename Key>
-inline Node Node::operator[](const Key& key) {
+Node Node::get(const Key& key) {
   ThrowOnInvalid();
   EnsureNodeExists();
-  detail::node& value = m_pNode->get(detail::to_value(key), m_pMemory);
+
+  detail::node& value = m_pNode->get(key, m_pMemory);
   return Node(value, m_pMemory);
 }
 
@@ -425,6 +454,7 @@ inline bool Node::remove(const Key& key) {
 }
 
 inline const Node Node::operator[](const Node& key) const {
+
   ThrowOnInvalid();
   key.ThrowOnInvalid();
 

@@ -65,6 +65,13 @@ struct convert<std::string> {
   }
 };
 
+template <>
+struct convert<detail::string_view> {
+  static void encode(const detail::string_view& rhs, Node& node) {
+    node.node().set_scalar(std::string(rhs.str, rhs.length));
+  }
+};
+
 // C-strings can only be encoded
 template <>
 struct convert<const char*> {

@@ -119,6 +119,7 @@ class node {
     value.add_dependency(*this);
     return value;
   }
+
   template <typename Key>
   bool remove(const Key& key, shared_memory& pMemory) {
     return m_pRef->remove(key, pMemory);

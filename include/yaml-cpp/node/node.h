@@ -7,6 +7,7 @@
 #include "yaml-cpp/mark.h"
 #include "yaml-cpp/node/detail/bool_type.h"
 #include "yaml-cpp/node/detail/iterator_fwd.h"
+#include "yaml-cpp/node/detail/string_view.h"
 #include "yaml-cpp/node/detail/memory.h"
 #include "yaml-cpp/node/type.h"
 
@@ -100,8 +101,10 @@ class YAML_CPP_API Node {
   // indexing
   template <typename Key>
   const Node operator[](const Key& key) const;
+
   template <typename Key>
   Node operator[](const Key& key);
+
   template <typename Key>
   bool remove(const Key& key);
 
@@ -149,6 +152,14 @@ class YAML_CPP_API Node {
     m_pNode = &node;
     if (m_pMemory != pMemory) { m_pMemory = pMemory; }
   }
+
+  template <typename Key>
+  const Node get(const Key& key) const;
+  const Node get(const detail::string_view& key) const;
+
+  template <typename Key>
+  Node get(const Key& key);
+  Node get(const detail::string_view& key);
 };
 
 YAML_CPP_API bool operator==(const Node& lhs, const Node& rhs);
