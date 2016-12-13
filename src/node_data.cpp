@@ -217,7 +217,7 @@ node_iterator node_data::end() {
 }
 
 // sequence
-void node_data::push_back(node& node, shared_memory /* pMemory */) {
+void node_data::push_back(node& node, shared_memory& /* pMemory */) {
 
   if (m_type == NodeType::Undefined || m_type == NodeType::Null) {
     set_type(NodeType::Sequence);
@@ -233,7 +233,7 @@ void node_data::push_back(node& node, shared_memory /* pMemory */) {
   }
 }
 
-void node_data::insert(node& key, node& value, shared_memory pMemory) {
+void node_data::insert(node& key, node& value, shared_memory& pMemory) {
   switch (m_type) {
     case NodeType::Map:
       break;
@@ -250,7 +250,7 @@ void node_data::insert(node& key, node& value, shared_memory pMemory) {
 }
 
 // indexing
-node* node_data::get(node& key, shared_memory /* pMemory */) const {
+node* node_data::get(node& key, shared_memory& /* pMemory */) const {
   if (m_type != NodeType::Map) {
     return nullptr;
   }
@@ -263,7 +263,7 @@ node* node_data::get(node& key, shared_memory /* pMemory */) const {
   return nullptr;
 }
 
-node& node_data::get(node& key, shared_memory pMemory) {
+node& node_data::get(node& key, shared_memory& pMemory) {
   switch (m_type) {
     case NodeType::Map:
       break;
@@ -285,7 +285,7 @@ node& node_data::get(node& key, shared_memory pMemory) {
   return value;
 }
 
-bool node_data::remove(node& key, shared_memory /* pMemory */) {
+bool node_data::remove(node& key, shared_memory& /* pMemory */) {
   if (m_type != NodeType::Map)
     return false;
 
@@ -306,7 +306,7 @@ void node_data::insert_map_pair(node& key, node& value) {
   }
 }
 
-void node_data::convert_to_map(shared_memory pMemory) {
+void node_data::convert_to_map(shared_memory& pMemory) {
   switch (m_type) {
     case NodeType::Undefined:
     case NodeType::Null:
@@ -323,7 +323,7 @@ void node_data::convert_to_map(shared_memory pMemory) {
   }
 }
 
-void node_data::convert_sequence_to_map(shared_memory pMemory) {
+void node_data::convert_sequence_to_map(shared_memory& pMemory) {
 
   node_seq tmp = std::move(seq());
 
