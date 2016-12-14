@@ -378,7 +378,7 @@ bool Stream::EatLineBreak() {
     m_mark.column = 0;
     m_mark.line++;
   } else if (m_char == '\r' &&
-             (ReadAheadTo(1) && m_buffer[m_readaheadPos + 1])) {
+             (ReadAheadTo(1) && m_buffer[m_readaheadPos + 1] == '\n')) {
     m_readaheadPos += 2;
     m_mark.pos += 2;
     m_mark.column = 0;
