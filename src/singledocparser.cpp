@@ -102,7 +102,7 @@ Token::TYPE SingleDocParser::HandleNodeOpen(EventHandler& eventHandler) {
 
   // add non-specific tags
   if (tag.empty())
-    tag = (token.type == Token::NON_PLAIN_SCALAR ? "!" : "?");
+    tag = (token.type == Token::NON_PLAIN_SCALAR ? '!' : '?');
 
   // now split based on what kind of node we should be
   if (token.type == Token::PLAIN_SCALAR) {
