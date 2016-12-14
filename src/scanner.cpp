@@ -230,10 +230,11 @@ void Scanner::ScanToNextToken() {
     }
 
     // if it's NOT a line break, then we're done!
-    if (!INPUT.EatLineBreak()) {
+    // otherwise, let's eat the line break and keep going
+    if (!(INPUT.peek() == '\n' || INPUT.peek() == '\r') ||
+        !INPUT.EatLineBreak()) {
         break;
     }
-    // otherwise, let's eat the line break and keep going
 
     // oh yeah, and let's get rid of that simple key
     InvalidateSimpleKey();
