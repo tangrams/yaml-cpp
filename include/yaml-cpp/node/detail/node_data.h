@@ -9,6 +9,7 @@
 
 #include "yaml-cpp/dll.h"
 #include "yaml-cpp/node/detail/node_iterator.h"
+#include "yaml-cpp/node/detail/string_view.h"
 #include "yaml-cpp/node/iterator.h"
 #include "yaml-cpp/node/ptr.h"
 #include "yaml-cpp/node/type.h"
@@ -16,6 +17,7 @@
 namespace YAML {
 namespace detail {
 class node;
+
 }  // namespace detail
 }  // namespace YAML
 
@@ -79,24 +81,42 @@ class YAML_CPP_API node_data : public ref_counted {
   node_iterator end();
 
   // sequence
-  void push_back(node& node, shared_memory pMemory);
-  void insert(node& key, node& value, shared_memory pMemory);
+  void push_back(node& node, shared_memory& pMemory);
+  void insert(node& key, node& value, shared_memory& pMemory);
 
   // indexing
-  template <typename Key>
-  node* get(const Key& key, shared_memory pMemory) const;
-  template <typename Key>
-  node& get(const Key& key, shared_memory pMemory);
-  template <typename Key>
-  bool remove(const Key& key, shared_memory pMemory);
+  template <typename Key,
+            typename std::enable_if<std::is_same<Key, detail::string_view>::value, int>::type = 1>
+    //typename detail::is_string_view<Key>>
+  node* get(const Key& key, shared_memory& pMemory) const;
 
-  node* get(node& key, shared_memory pMemory) const;
-  node& get(node& key, shared_memory pMemory);
-  bool remove(node& key, shared_memory pMemory);
+  template <typename Key,
+            typename std::enable_if<!std::is_same<Key, detail::string_view>::value, int>::type = 0>
+  node* get(const Key& key, shared_memory& pMemory) const;
+
+  template <typename Key,
+            typename std::enable_if<std::is_same<Key, detail::string_view>::value, int>::type = 1>
+  node& get(const Key& key, shared_memory& pMemory);
+
+  template <typename Key,
+            typename std::enable_if<!std::is_same<Key, detail::string_view>::value, int>::type = 0>
+  node& get(const Key& key, shared_memory& pMemory);
+
+  template <typename Key,
+            typename std::enable_if<std::is_same<Key, detail::string_view>::value, int>::type = 1>
+  bool remove(const Key& key, shared_memory& pMemory);
+
+  template <typename Key,
+            typename std::enable_if<!std::is_same<Key, detail::string_view>::value, int>::type = 0>
+  bool remove(const Key& key, shared_memory& pMemory);
+
+  node* get(node& key, shared_memory& pMemory) const;
+  node& get(node& key, shared_memory& pMemory);
+  bool remove(node& key, shared_memory& pMemory);
 
   // map
   template <typename Key, typename Value>
-  void force_insert(const Key& key, const Value& value, shared_memory pMemory);
+  void force_insert(const Key& key, const Value& value, shared_memory& pMemory);
 
   static const std::string& emptyString();
 
@@ -134,11 +154,11 @@ class YAML_CPP_API node_data : public ref_counted {
   std::size_t compute_map_size() const;
 
   void insert_map_pair(node& key, node& value);
-  void convert_to_map(shared_memory pMemory);
-  void convert_sequence_to_map(shared_memory pMemory);
+  void convert_to_map(shared_memory& pMemory);
+  void convert_sequence_to_map(shared_memory& pMemory);
 
   template <typename T>
-  static node& convert_to_node(const T& rhs, shared_memory pMemory);
+  static node& convert_to_node(const T& rhs, shared_memory& pMemory);
 
  private:
 

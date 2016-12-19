@@ -9,6 +9,8 @@
 #include <utility>
 #include <vector>
 
+// Iterator over raw node*, pair<node*,node*> (node_iterator_value)
+
 namespace YAML {
 namespace detail {
 struct iterator_type {

@@ -1,6 +1,10 @@
 #include "yaml-cpp/exceptions.h"
 #include "yaml-cpp/node/node.h"
+#include "yaml-cpp/node/impl.h"
 #include "yaml-cpp/node/detail/node.h"
+#include "yaml-cpp/node/detail/node_data.h"
+#include "yaml-cpp/node/convert.h"
+#include "yaml-cpp/node/detail/impl.h"
 #include "yaml-cpp/nodebuilder.h"
 #include "nodeevents.h"
 
@@ -13,6 +17,26 @@ Node Clone(const Node& node) {
 }
 void Node::ThrowInvalidNode() const {
   throw InvalidNode();
+}
+
+const Node Node::get(const detail::string_view& key) const {
+  ThrowOnInvalid();
+  EnsureNodeExists();
+
+  detail::node* value = static_cast<const detail::node&>(*m_pNode).get(key, m_pMemory);
+
+  if (!value) {
+    return Node(ZombieNode);
+  }
+  return Node(*value, m_pMemory);
+}
+
+Node Node::get(const detail::string_view& key) {
+  ThrowOnInvalid();
+  EnsureNodeExists();
+
+  detail::node& value = m_pNode->get(key, m_pMemory);
+  return Node(value, m_pMemory);
 }
 
 namespace detail {
