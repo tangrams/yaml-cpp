@@ -14,8 +14,6 @@
 #define S_ARRAY_SIZE(A) (sizeof(A) / sizeof(*(A)))
 #define S_ARRAY_END(A) ((A) + S_ARRAY_SIZE(A))
 
-#define likely(x)       __builtin_expect(!!(x), 1)
-
 #define CP_REPLACEMENT_CHARACTER (0xFFFD)
 
 namespace YAML {

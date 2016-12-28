@@ -22,3 +22,19 @@
 #else   // YAML_CPP_DLL
 #define YAML_CPP_API
 #endif  // YAML_CPP_DLL
+
+#ifdef _MSC_VER
+#define likely(x)  (x)
+#define unlikely(x) (x)
+#else
+#define likely(x)   __builtin_expect(!!(x), 1)
+#define unlikely(x) __builtin_expect(!!(x), 0)
+#endif
+
+#ifdef _MSC_VER
+#define YAML_CPP_INLINE __forceinline
+#define YAML_CPP_NOINLINE
+#else
+#define YAML_CPP_INLINE __attribute__((always_inline))
+#define YAML_CPP_NOINLINE __attribute__((noinline))
+#endif

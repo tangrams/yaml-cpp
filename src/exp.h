@@ -7,13 +7,10 @@
 #include "stream.h"
 #include "stringsource.h"
 #include "streamcharsource.h"
+#include "yaml-cpp/dll.h"
 
-#define REGEXP_INLINE inline __attribute__((always_inline))
-#define TEST_INLINE inline __attribute__((always_inline))
-//#define TEST_INLINE __attribute__((noinline))
-
-#define likely(x)   __builtin_expect(!!(x), 1)
-#define unlikely(x) __builtin_expect(!!(x), 0)
+#define REGEXP_INLINE YAML_CPP_INLINE
+#define TEST_INLINE YAML_CPP_INLINE
 
 namespace YAML {
 

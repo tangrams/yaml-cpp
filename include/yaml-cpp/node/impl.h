@@ -5,6 +5,7 @@
 #include "yaml-cpp/node/detail/memory.h"
 #include "yaml-cpp/node/detail/node.h"
 #include "yaml-cpp/node/detail/string_view.h"
+#include "yaml-cpp/dll.h"
 #include "yaml-cpp/exceptions.h"
 #include <string>
 #include <cstring>
@@ -65,7 +66,7 @@ inline Node::Node(detail::node& node, detail::shared_memory pMemory)
 inline Node::~Node() {}
 
 inline void Node::ThrowOnInvalid() const {
-  if (__builtin_expect(!m_pMemory, 0)) { ThrowInvalidNode(); };
+  if (unlikely(!m_pMemory)) { ThrowInvalidNode(); };
 }
 
 inline void Node::EnsureNodeExists() const {

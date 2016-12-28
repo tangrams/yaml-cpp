@@ -18,8 +18,7 @@ class node {
   node() : m_pRef(nullptr) {}
   void set_data(node_data *data) { m_pRef = data; }
 
-  __attribute__((noinline))
-  ~node() {}
+  YAML_CPP_NOINLINE ~node() {}
 
   node(const node&) = delete;
   // required for bucket reserve

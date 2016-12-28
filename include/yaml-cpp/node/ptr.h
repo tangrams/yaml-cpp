@@ -10,8 +10,7 @@ struct ref_holder {
 
    using holder = ref_holder<T, owned_region>;
 
-   __attribute__((always_inline))
-  ~ref_holder() { release(); }
+  YAML_CPP_INLINE ~ref_holder() { release(); }
 
   ref_holder(T* ptr) {
     if (ptr) {
