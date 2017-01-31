@@ -35,12 +35,12 @@ void node_data::mark_defined() {
 }
 
 node_data::~node_data() {
-    if (m_tag &&
-        m_tag != &tag_other &&
-        m_tag != &tag_non_plain_scalar) {
-        delete m_tag;
-    }
-    free_data();
+  if (m_tag &&
+     m_tag != &tag_other &&
+     m_tag != &tag_non_plain_scalar) {
+    delete m_tag;
+  }
+  free_data();
 }
 
 void node_data::free_data() {
@@ -68,7 +68,9 @@ void node_data::set_type(NodeType::value type) {
   if (type == m_type)
     return;
 
-  free_data();
+  if (m_type != NodeType::Undefined) {
+    free_data();
+  }
 
   m_type = type;
 
