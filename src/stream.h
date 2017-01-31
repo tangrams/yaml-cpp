@@ -137,7 +137,7 @@ class Stream : private noncopyable {
 
   mutable const char* m_buffer;
 
-  std::istream& m_input;
+  std::istream* m_input;
   CharacterSet m_charSet;
 
   unsigned char* const m_pPrefetched;
@@ -145,6 +145,7 @@ class Stream : private noncopyable {
   mutable size_t m_nPrefetchedUsed;
 
   bool m_nostream = false;
+  bool m_ownInput = false;
   inline void AdvanceCurrent();
   bool ReadAheadTo(size_t i) const;
   bool _ReadAheadTo(size_t i) const;
@@ -156,6 +157,9 @@ class Stream : private noncopyable {
   void QueueUnicodeCodepoint(unsigned long ch) const;
 
   void UpdateLookahead() const;
+
+  static CharacterSet determineCharachterSet(std::istream& input, int& skip);
+
 };
 
 inline bool Stream::ReadAheadTo(size_t i) const {
