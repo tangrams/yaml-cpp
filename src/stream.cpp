@@ -504,6 +504,12 @@ void Stream::UpdateLookahead() const {
 bool Stream::_ReadAheadTo(size_t i) const {
     if (m_nostream) { return false; }
 
+    const size_t readaheadLimit = 32;
+    if (m_readaheadPos > readaheadLimit + i) {
+        m_readahead.erase(m_readahead.begin(), m_readahead.begin() + readaheadLimit);
+        m_readaheadPos -= readaheadLimit;
+    }
+
     while (m_input->good() && (m_readahead.size()  - m_readaheadPos <= i)) {
     switch (m_charSet) {
       case utf8:
