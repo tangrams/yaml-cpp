@@ -131,7 +131,7 @@ class Stream : private noncopyable {
   Mark m_mark;
   char m_char = Stream::eof();
 
-  size_t m_readaheadPos = 0;
+  mutable size_t m_readaheadPos = 0;
   mutable size_t m_readaheadSize = 0;
   mutable std::vector<char> m_readahead;
 
@@ -144,7 +144,6 @@ class Stream : private noncopyable {
   mutable size_t m_nPrefetchedAvailable;
   mutable size_t m_nPrefetchedUsed;
 
-  bool m_nostream = false;
   bool m_ownInput = false;
   inline void AdvanceCurrent();
   bool ReadAheadTo(size_t i) const;

@@ -255,14 +255,11 @@ Stream::Stream(const std::string& input)
     m_charSet = determineCharachterSet(ss, skip);
 
     if (m_charSet == utf8) {
-        m_nostream = true;
-
         // Skip UTF-8 BOM
         m_readaheadSize = input.size() - skip;
         m_buffer = input.data() + skip;
 
     } else {
-        m_nostream = false;
         m_readaheadSize = 0;
 
         m_input = new std::stringstream({input.begin() + skip, input.end()});
@@ -362,7 +359,7 @@ void Stream::EatSpace() {
   int pos = m_readaheadPos;
   int available = m_readaheadSize;
 
-  char ch = m_char;
+  char ch;
   do {
     if (++pos == available) {
       int count = pos - m_readaheadPos;
@@ -503,7 +500,13 @@ void Stream::UpdateLookahead() const {
 }
 
 bool Stream::_ReadAheadTo(size_t i) const {
-    if (m_nostream) { return false; }
+    if (!m_input) { return false; }
+
+    const size_t readaheadLimit = 32;
+    if (m_readaheadPos > readaheadLimit + i) {
+        m_readahead.erase(m_readahead.begin(), m_readahead.begin() + readaheadLimit);
+        m_readaheadPos -= readaheadLimit;
+    }
 
     while (m_input->good() && (m_readahead.size()  - m_readaheadPos <= i)) {
     switch (m_charSet) {
