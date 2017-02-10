@@ -46,7 +46,7 @@ bool Scanner::CanInsertPotentialSimpleKey() const {
 //   (there's allowed at most one per flow level, i.e., at the start of the flow
 // start token)
 bool Scanner::ExistsActiveSimpleKey() const {
-  if (!m_simpleKeys.empty()) {
+  if (likely(!m_simpleKeys.empty())) {
     return m_simpleKeys.top().flowLevel == GetFlowLevel();
   }
   return false;
