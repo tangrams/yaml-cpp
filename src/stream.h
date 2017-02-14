@@ -1,6 +1,7 @@
 #pragma once
 
 #include "yaml-cpp/noncopyable.h"
+#include "yaml-cpp/dll.h"
 #include "yaml-cpp/mark.h"
 #include "streamcharsource.h"
 
@@ -89,7 +90,7 @@ class Stream : private noncopyable {
     int offset = m_mark.pos - m_lookahead.streamPos;
     auto dst = reinterpret_cast<uint32_t*>(out.data());
 
-    if (__builtin_expect(m_lookahead.available > 4 + offset, 1)) {
+    if (likely(m_lookahead.available > 4 + offset)) {
       auto src = reinterpret_cast<uint64_t*>(m_lookahead.buffer.data());
       dst[0] = src[0] >> (offset * 8);
     } else {

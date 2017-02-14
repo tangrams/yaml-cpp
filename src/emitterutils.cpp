@@ -420,9 +420,10 @@ bool WriteAnchor(ostream_wrapper& out, const std::string& str) {
 bool WriteTag(ostream_wrapper& out, const std::string& str, bool verbatim) {
   out << (verbatim ? "!<" : "!");
   StringCharSource buffer(str.c_str(), str.size());
-  auto reValid = verbatim ?
-      [](const StringCharSource& s) { return Exp::URI::Match(s); } :
-      [](const StringCharSource& s) { return Exp::Tag::Match(s); };
+  typedef int(*MatchFunctionType)(const StringCharSource& s);
+  MatchFunctionType uriMatch = [](const StringCharSource& s) { return Exp::URI::Match(s); };
+  MatchFunctionType tagMatch = [](const StringCharSource& s) { return Exp::Tag::Match(s); };
+  MatchFunctionType reValid = verbatim ? uriMatch : tagMatch;
 
   while (buffer) {
 

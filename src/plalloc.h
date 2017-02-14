@@ -55,7 +55,14 @@ struct plalloc {
   bool operator!=(const plalloc & other) const {
     return !(*this == other);
   }
-
+#ifdef _MSC_VER
+  T * allocate(size_t num_to_allocate) {
+    return static_cast<T *>(::operator new(sizeof(T) * num_to_allocate));
+  }
+  void deallocate(T * ptr, size_t num_to_free) {
+    ::operator delete(ptr);
+  }
+#else
   T * allocate(size_t num_to_allocate) {
     if (num_to_allocate != 1) {
       return static_cast<T *>(::operator new(sizeof(T) * num_to_allocate));
@@ -88,6 +95,7 @@ struct plalloc {
       ::operator delete(ptr);
     }
   }
+#endif
 
   // boilerplate that shouldn't be needed, except
   // libstdc++ doesn't use allocator_traits yet

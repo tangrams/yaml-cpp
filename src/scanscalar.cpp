@@ -163,7 +163,8 @@ std::string Scanner::ScanScalar(ScanScalarParams& params) {
     }
     // ********************************
     // Phase #2: eat line ending
-    assert(INPUT.EatLineBreak());
+    bool eated = INPUT.EatLineBreak();
+    assert(eated);
 
     // ********************************
     // Phase #3: scan initial spaces
