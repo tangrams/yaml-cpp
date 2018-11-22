@@ -22,6 +22,16 @@ using ::testing::Eq;
 
 namespace YAML {
 namespace {
+
+TEST(NodeTest, EmptyNode) {
+  Node node;
+  EXPECT_TRUE(node.IsDefined());
+  EXPECT_TRUE(node.IsNull());
+  node = "Hello, World!";
+  EXPECT_TRUE(node.IsDefined());
+  EXPECT_TRUE(node.Type() == NodeType::Scalar);
+}
+
 TEST(NodeTest, SimpleScalar) {
   Node node = Node("Hello, World!");
   EXPECT_TRUE(node.IsScalar());
