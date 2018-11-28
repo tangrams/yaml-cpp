@@ -79,6 +79,8 @@ inline void Node::EnsureNodeExists() const {
 
 inline bool Node::IsDefined() const {
   if (isValid()) {
+      // FIXME should be:
+      //return m_pNode ? m_pNode->is_defined() : false;
       return m_pNode ? m_pNode->is_defined() : true;
   }
   return false;
@@ -92,7 +94,8 @@ inline Mark Node::Mark() const {
 
 inline NodeType::value Node::Type() const {
   ThrowOnInvalid();
-
+  // FIXME should be:
+  //return m_pNode ? m_pNode->type() : NodeType::Undefined;
   return m_pNode ? m_pNode->type() : NodeType::Null;
 }
 
