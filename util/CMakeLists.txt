@@ -12,3 +12,12 @@ add_sources(read.cpp)
 add_executable(read read.cpp)
 target_link_libraries(read yaml-cpp)
 
+if(YAML_CPP_BUILD_PROTOBUF)
+  add_sources(protodump.cpp)
+  add_executable(protodump protodump.cpp)
+  target_link_libraries(protodump yaml-cpp)
+
+  add_sources(protoload.cpp)
+  add_executable(protoload protoload.cpp)
+  target_link_libraries(protoload yaml-cpp)
+endif()

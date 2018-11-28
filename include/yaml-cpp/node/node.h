@@ -23,6 +23,7 @@ namespace YAML {
 class YAML_CPP_API Node {
  public:
   friend class NodeBuilder;
+  friend struct Protobuf;
   friend class NodeEvents;
   friend struct detail::iterator_value;
   friend class detail::node;

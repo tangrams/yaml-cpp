@@ -1,0 +1,23 @@
+syntax = "proto2";
+
+package YAML.proto;
+
+message Map {
+  message Entry {
+    required string key = 1;
+    required Node val = 2;
+  }
+  required int32 size = 1;
+  repeated Entry entry = 2;
+}
+
+message Sequence {
+  required int32 size = 1;
+  repeated Node item = 2;
+}
+
+message Node {
+  optional string scalar = 1;
+  optional Sequence sequence = 2;
+  optional Map map = 3;
+}

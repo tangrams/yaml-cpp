@@ -24,6 +24,7 @@ set(YAML_CPP_VERSION "${YAML_CPP_VERSION_MAJOR}.${YAML_CPP_VERSION_MINOR}.${YAML
 option(YAML_CPP_BUILD_TESTS "Enable testing" ON)
 option(YAML_CPP_BUILD_TOOLS "Enable parse tools" ON)
 option(YAML_CPP_BUILD_CONTRIB "Enable contrib stuff in library" ON)
+option(YAML_CPP_BUILD_PROTOBUF "Enable protobuf stuff in library" ON)
 option(YAML_CPP_INSTALL "Enable generation of install target" ON)
 
 ## Build options
@@ -85,6 +86,20 @@ else()
 	add_definitions(-DYAML_CPP_NO_CONTRIB)
 endif()
 
+if(YAML_CPP_BUILD_PROTOBUF)
+    file(GLOB contrib_sources "src/proto/[a-zA-Z]*.cpp")
+    file(GLOB contrib_public_headers "include/yaml-cpp/proto/[a-zA-Z]*.h")
+    file(GLOB contrib_private_headers "src/proto/[a-zA-Z]*.h")
+    find_package(Protobuf REQUIRED)
+    include_directories(${Protobuf_INCLUDE_DIRS})
+    include_directories(${YAML_CPP_SOURCE_DIR}/include/yaml-cpp/proto)
+    link_libraries(${Protobuf_LIBRARIES})
+
+    set(protbuf_sources
+      src/proto/protobuf.cpp
+      src/proto/yaml.pb.cc)
+endif()
+
 set(library_sources
   ${sources}
   ${public_headers}
@@ -92,7 +107,8 @@ set(library_sources
   ${contrib_sources}
   ${contrib_public_headers}
   ${contrib_private_headers}
-)
+  ${protbuf_sources})
+
 add_sources(${library_sources})
 
 if(VERBOSE)

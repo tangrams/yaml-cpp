@@ -47,7 +47,7 @@ class YAML_CPP_API node_data : public ref_counted {
   node_data& operator=(node_data&&) = default;
 
   void mark_defined();
-  void set_type(NodeType type);
+  void set_type(NodeType type, size_t reserve = 4);
   void set_tag(const std::string& tag);
   void set_null();
   void set_scalar(const std::string& scalar);

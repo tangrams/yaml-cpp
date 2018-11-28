@@ -53,10 +53,10 @@ class node {
 
   void set_mark(const Mark& mark) { m_pRef->set_mark(mark); }
 
-  void set_type(NodeType type) {
+  void set_type(NodeType type, size_t reserve = 4) {
     if (type != NodeType::Undefined)
       mark_defined();
-    m_pRef->set_type(type);
+    m_pRef->set_type(type, reserve);
   }
   void set_null() {
     if (!is_defined()) mark_defined();

@@ -59,8 +59,7 @@ void node_data::free_data() {
   }
 }
 
-void node_data::set_type(NodeType type) {
-
+void node_data::set_type(NodeType type, size_t reserve) {
   if (type == m_type)
     return;
 
@@ -78,11 +77,11 @@ void node_data::set_type(NodeType type) {
       break;
     case NodeType::Sequence:
       new (&m_data) node_seq;
-      seq().reserve(4);
+      seq().reserve(reserve);
       break;
     case NodeType::Map:
       new (&m_data) node_map;
-      map().reserve(4);
+      map().reserve(reserve);
       break;
     case NodeType::Undefined:
       break;
