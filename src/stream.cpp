@@ -244,25 +244,26 @@ Stream::CharacterSet Stream::determineCharachterSet(std::istream& input, int& sk
   return utf8;
 }
 
-Stream::Stream(const std::string& input)
+
+Stream::Stream(const char* input, size_t length)
     : m_input(nullptr),
       m_pPrefetched(new unsigned char[YAML_PREFETCH_SIZE]),
       m_nPrefetchedAvailable(0),
       m_nPrefetchedUsed(0) {
 
-    std::stringstream ss(input.substr(0, 5));
     int skip = 0;
+    std::stringstream ss(input);
     m_charSet = determineCharachterSet(ss, skip);
 
     if (m_charSet == utf8) {
         // Skip UTF-8 BOM
-        m_readaheadSize = input.size() - skip;
-        m_buffer = input.data() + skip;
+        m_readaheadSize = length - skip;
+        m_buffer = input + skip;
 
     } else {
         m_readaheadSize = 0;
 
-        m_input = new std::stringstream({input.begin() + skip, input.end()});
+        m_input = new std::stringstream(input + skip);
         m_ownInput = true;
     }
 

@@ -21,7 +21,7 @@ YAML_CPP_API Node Load(const std::string& input);
  *
  * @throws {@link ParserException} if it is malformed.
  */
-YAML_CPP_API Node Load(const char* input);
+YAML_CPP_API Node Load(const char* input, size_t length);
 
 /**
  * Loads the input stream as a single YAML document.

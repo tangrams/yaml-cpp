@@ -27,7 +27,7 @@ class YAML_CPP_API Parser : private noncopyable {
    * live as long as the parser.
    */
   explicit Parser(std::istream& in);
-  explicit Parser(const std::string& in);
+  explicit Parser(const char* in, size_t length);
 
   ~Parser();
 
@@ -39,7 +39,7 @@ class YAML_CPP_API Parser : private noncopyable {
    * erased.
    */
   void Load(std::istream& in);
-  void Load(const std::string& in);
+  void Load(const char* in, size_t length);
 
   /**
    * Handles the next document by calling events on the {@code eventHandler}.

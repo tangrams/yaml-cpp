@@ -20,8 +20,9 @@ class Stream : private noncopyable {
  public:
   friend class StreamCharSource;
 
-  Stream(std::istream& input);
-  Stream(const std::string& input);
+  explicit Stream(std::istream& input);
+  explicit Stream(const std::string& input);
+  explicit Stream(const char* input, size_t length);
   ~Stream();
 
   operator bool() const {
