@@ -409,7 +409,7 @@ static int HandleFolding(std::string& scalar,
     case FOLD_FLOW:
       if (nextEmptyLine) {
         scalar += '\n';
-      } else if (!emptyLine && !nextEmptyLine && !escapedNewline) {
+      } else if (!emptyLine && !escapedNewline) {
         scalar += ' ';
       }
       break;
