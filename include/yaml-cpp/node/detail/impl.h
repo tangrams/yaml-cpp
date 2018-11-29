@@ -186,7 +186,7 @@ inline node& node_data::get(const Key& key, shared_memory& pMemory) {
 }
 
 template <typename Key, typename std::enable_if<std::is_same<Key, detail::string_view>::value, int>::type>
-inline bool node_data::remove(const Key& key, shared_memory& pMemory) {
+inline bool node_data::remove(const Key& key, shared_memory&) {
   if (m_type != NodeType::Map)
     return false;
 
