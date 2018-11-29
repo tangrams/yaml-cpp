@@ -106,7 +106,7 @@ struct ref_counted {
   bool release() { return (--m_refs == 0); }
 
  private:
-  std::size_t m_refs = 0;
+  uint32_t m_refs = 0;
 };
 }
 }
