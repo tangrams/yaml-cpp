@@ -59,7 +59,7 @@ void node_data::free_data() {
   }
 }
 
-void node_data::set_type(NodeType::value type) {
+void node_data::set_type(NodeType type) {
 
   if (type == m_type)
     return;

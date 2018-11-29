@@ -47,18 +47,18 @@ class YAML_CPP_API node_data : public ref_counted {
   node_data& operator=(node_data&&) = default;
 
   void mark_defined();
-  void set_type(NodeType::value type);
+  void set_type(NodeType type);
   void set_tag(const std::string& tag);
   void set_null();
   void set_scalar(const std::string& scalar);
   void set_scalar(std::string&& scalar);
 
   void set_mark(const Mark& mark) { m_mark = mark; }
-  void set_style(EmitterStyle::value style) { m_style = style; }
+  void set_style(EmitterStyle style) { m_style = style; }
 
   bool is_defined() const { return m_type != NodeType::Undefined; }
   const Mark& mark() const { return m_mark; }
-  NodeType::value type() const {
+  NodeType type() const {
     return m_type;
   }
   const std::string& scalar() const {
@@ -69,7 +69,7 @@ class YAML_CPP_API node_data : public ref_counted {
   }
   const std::string& tag() const { return m_tag ? *m_tag : tag_none; }
 
-  EmitterStyle::value style() const { return m_style; }
+  EmitterStyle style() const { return m_style; }
 
   // size/iterator
   std::size_t size() const;
@@ -165,8 +165,8 @@ class YAML_CPP_API node_data : public ref_counted {
 
  private:
 
-  NodeType::value m_type;
-  EmitterStyle::value m_style;
+  NodeType m_type;
+  EmitterStyle m_style;
   mutable bool m_hasUndefined;
 
   Mark m_mark;

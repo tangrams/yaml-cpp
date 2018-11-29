@@ -23,7 +23,7 @@ inline Node::Node(const T& rhs)
     Assign(rhs);
 }
 
-inline Node::Node(NodeType::value type)
+inline Node::Node(NodeType type)
     : m_pMemory(new detail::memory_ref),
       m_pNode(&(m_pMemory->create_node())) {
   m_pNode->set_type(type);
@@ -92,7 +92,7 @@ inline Mark Node::Mark() const {
   return m_pNode ? m_pNode->mark() : Mark::null_mark();
 }
 
-inline NodeType::value Node::Type() const {
+inline NodeType Node::Type() const {
   ThrowOnInvalid();
   // FIXME should be:
   //return m_pNode ? m_pNode->type() : NodeType::Undefined;
@@ -189,12 +189,12 @@ inline void Node::SetTag(const std::string& tag) {
   m_pNode->set_tag(tag);
 }
 
-inline EmitterStyle::value Node::Style() const {
+inline EmitterStyle Node::Style() const {
   ThrowOnInvalid();
   return m_pNode ? m_pNode->style() : EmitterStyle::Default;
 }
 
-inline void Node::SetStyle(EmitterStyle::value style) {
+inline void Node::SetStyle(EmitterStyle style) {
   ThrowOnInvalid();
   EnsureNodeExists();
   m_pNode->set_style(style);

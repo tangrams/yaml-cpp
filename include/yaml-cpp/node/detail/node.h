@@ -32,11 +32,11 @@ class node {
 
   bool is_defined() const { return m_pRef->is_defined(); }
   const Mark& mark() const { return m_pRef->mark(); }
-  NodeType::value type() const { return m_pRef->type(); }
+  NodeType type() const { return m_pRef->type(); }
 
   const std::string& scalar() const { return static_cast<const node_data&>(*m_pRef).scalar(); }
   const std::string& tag() const { return m_pRef->tag(); }
-  EmitterStyle::value style() const { return m_pRef->style(); }
+  EmitterStyle style() const { return m_pRef->style(); }
 
   template <typename T>
   bool equals(const T& rhs, shared_memory& pMemory);
@@ -53,7 +53,7 @@ class node {
 
   void set_mark(const Mark& mark) { m_pRef->set_mark(mark); }
 
-  void set_type(NodeType::value type) {
+  void set_type(NodeType type) {
     if (type != NodeType::Undefined)
       mark_defined();
     m_pRef->set_type(type);
@@ -76,7 +76,7 @@ class node {
   }
 
   // style
-  void set_style(EmitterStyle::value style) {
+  void set_style(EmitterStyle style) {
     if (!is_defined()) mark_defined();
     m_pRef->set_style(style);
   }

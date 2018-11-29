@@ -1,7 +1,5 @@
 #pragma once
 
 namespace YAML {
-struct EmitterNodeType {
-  enum value { NoType, Property, Scalar, FlowSeq, BlockSeq, FlowMap, BlockMap };
-};
+enum class EmitterNodeType : char { NoType, Property, Scalar, FlowSeq, BlockSeq, FlowMap, BlockMap };
 }

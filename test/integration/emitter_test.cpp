@@ -15,10 +15,10 @@ class NullEventHandler : public EventHandler {
   virtual void OnScalar(const Mark&, const std::string&, anchor_t,
                         std::string) {}
   virtual void OnSequenceStart(const Mark&, const std::string&, anchor_t,
-                               EmitterStyle::value) {}
+                               EmitterStyle) {}
   virtual void OnSequenceEnd() {}
   virtual void OnMapStart(const Mark&, const std::string&, anchor_t,
-                          EmitterStyle::value) {}
+                          EmitterStyle) {}
   virtual void OnMapEnd() {}
 };
 

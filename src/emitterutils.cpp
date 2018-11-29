@@ -149,7 +149,7 @@ void WriteCodePoint(ostream_wrapper& out, int codePoint) {
   }
 }
 
-bool IsValidPlainScalar(const std::string& str, FlowType::value flowType,
+bool IsValidPlainScalar(const std::string& str, FlowType flowType,
                         bool allowOnlyAscii) {
   // check against null
   if (IsNullString(str)) {
@@ -206,7 +206,7 @@ bool IsValidSingleQuotedScalar(const std::string& str, bool escapeNonAscii) {
   return true;
 }
 
-bool IsValidLiteralScalar(const std::string& str, FlowType::value flowType,
+bool IsValidLiteralScalar(const std::string& str, FlowType flowType,
                           bool escapeNonAscii) {
   if (flowType == FlowType::Flow) {
     return false;
@@ -256,9 +256,9 @@ bool WriteAliasName(ostream_wrapper& out, const std::string& str) {
 }
 }
 
-StringFormat::value ComputeStringFormat(const std::string& str,
+StringFormat ComputeStringFormat(const std::string& str,
                                         EMITTER_MANIP strFormat,
-                                        FlowType::value flowType,
+                                        FlowType flowType,
                                         bool escapeNonAscii) {
   switch (strFormat) {
     case Auto:

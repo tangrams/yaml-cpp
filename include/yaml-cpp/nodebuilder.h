@@ -33,11 +33,11 @@ class NodeBuilder : public EventHandler {
                 anchor_t anchor, std::string value) override;
 
   void OnSequenceStart(const Mark& mark, const std::string& tag,
-                       anchor_t anchor, EmitterStyle::value style) override;
+                       anchor_t anchor, EmitterStyle style) override;
   void OnSequenceEnd() override;
 
   void OnMapStart(const Mark& mark, const std::string& tag,
-                  anchor_t anchor, EmitterStyle::value style) override;
+                  anchor_t anchor, EmitterStyle style) override;
   void OnMapEnd() override;
 
  private:

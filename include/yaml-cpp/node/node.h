@@ -41,12 +41,12 @@ class YAML_CPP_API Node {
   ~Node();
   Node(const Node& rhs);
   Node(Node&& rhs);
-  explicit Node(NodeType::value type);
+  explicit Node(NodeType type);
   template <typename T>
   explicit Node(const T& rhs);
 
   YAML::Mark Mark() const;
-  NodeType::value Type() const;
+  NodeType Type() const;
   bool IsDefined() const;
   bool IsNull() const { return Type() == NodeType::Null; }
   bool IsScalar() const { return Type() == NodeType::Scalar; }
@@ -69,8 +69,8 @@ class YAML_CPP_API Node {
 
   // style
   // WARNING: This API might change in future releases.
-  EmitterStyle::value Style() const;
-  void SetStyle(EmitterStyle::value style);
+  EmitterStyle Style() const;
+  void SetStyle(EmitterStyle style);
 
   // assignment
   bool is(const Node& rhs) const;
