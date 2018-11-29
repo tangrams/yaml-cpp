@@ -28,7 +28,6 @@ class RegEx;
 class Scanner {
  public:
   explicit Scanner(std::istream &in);
-  explicit Scanner(const char* in, size_t length);
   ~Scanner();
 
   /** Returns true if there are no more tokens to be read. */

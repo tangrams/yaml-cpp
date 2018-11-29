@@ -21,8 +21,6 @@ class Stream : private noncopyable {
   friend class StreamCharSource;
 
   explicit Stream(std::istream& input);
-  explicit Stream(const std::string& input);
-  explicit Stream(const char* input, size_t length);
   ~Stream();
 
   operator bool() const {
@@ -138,14 +136,13 @@ class Stream : private noncopyable {
 
   mutable const char* m_buffer;
 
-  std::istream* m_input;
+  std::istream& m_input;
   CharacterSet m_charSet;
 
   unsigned char* const m_pPrefetched;
   mutable size_t m_nPrefetchedAvailable;
   mutable size_t m_nPrefetchedUsed;
 
-  bool m_ownInput = false;
   inline void AdvanceCurrent();
   bool ReadAheadTo(size_t i) const;
   bool _ReadAheadTo(size_t i) const;

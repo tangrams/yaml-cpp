@@ -244,50 +244,8 @@ Stream::CharacterSet Stream::determineCharachterSet(std::istream& input, int& sk
   return utf8;
 }
 
-
-Stream::Stream(const char* input, size_t length)
-    : m_input(nullptr),
-      m_pPrefetched(new unsigned char[YAML_PREFETCH_SIZE]),
-      m_nPrefetchedAvailable(0),
-      m_nPrefetchedUsed(0) {
-
-  if (length == 0) {
-    m_char = Stream::eof();
-    return;
-  }
-
-  int skip = 0;
-  m_charSet = utf8;
-
-  if (length > 0) {
-    std::string bom(input, input + std::min(size_t(5), length));
-    std::stringstream ss(bom);
-    m_charSet = determineCharachterSet(ss, skip);
-  }
-
-  if (m_charSet == utf8) {
-    // Skip UTF-8 BOM
-    m_readaheadSize = length - skip;
-    m_buffer = input + skip;
-
-  } else {
-    m_readaheadSize = 0;
-
-    m_input = new std::stringstream(input + skip);
-    m_ownInput = true;
-  }
-
-  ReadAheadTo(0);
-
-  if (m_readaheadSize > 0) {
-    m_char = m_buffer[0];
-  } else {
-    m_char = Stream::eof();
-  }
-}
-
 Stream::Stream(std::istream& input)
-    : m_input(&input),
+    : m_input(input),
       m_pPrefetched(new unsigned char[YAML_PREFETCH_SIZE]),
       m_nPrefetchedAvailable(0),
       m_nPrefetchedUsed(0) {
@@ -310,9 +268,6 @@ Stream::Stream(std::istream& input)
 Stream::~Stream() {
     if (m_pPrefetched) {
         delete[] m_pPrefetched;
-    }
-    if (m_ownInput) {
-        delete m_input;
     }
 }
 
@@ -519,7 +474,7 @@ bool Stream::_ReadAheadTo(size_t i) const {
         m_readaheadPos -= readaheadLimit;
     }
 
-    while (m_input->good() && (m_readahead.size()  - m_readaheadPos <= i)) {
+    while (m_input.good() && (m_readahead.size()  - m_readaheadPos <= i)) {
     switch (m_charSet) {
       case utf8:
         StreamInUtf8();
@@ -540,7 +495,7 @@ bool Stream::_ReadAheadTo(size_t i) const {
   }
 
   // signal end of stream
-  if (!m_input->good())
+  if (!m_input.good())
     m_readahead.push_back(Stream::eof());
 
   m_readaheadSize = m_readahead.size();
@@ -551,7 +506,7 @@ bool Stream::_ReadAheadTo(size_t i) const {
 
 void Stream::StreamInUtf8() const {
   unsigned char b = GetNextByte();
-  if (m_input->good()) {
+  if (m_input.good()) {
     m_readahead.push_back(b);
   }
 }
@@ -563,7 +518,7 @@ void Stream::StreamInUtf16() const {
 
   bytes[0] = GetNextByte();
   bytes[1] = GetNextByte();
-  if (!m_input->good()) {
+  if (!m_input.good()) {
     return;
   }
   ch = (static_cast<unsigned long>(bytes[nBigEnd]) << 8) |
@@ -582,7 +537,7 @@ void Stream::StreamInUtf16() const {
     for (;;) {
       bytes[0] = GetNextByte();
       bytes[1] = GetNextByte();
-      if (!m_input->good()) {
+      if (!m_input.good()) {
         QueueUnicodeCodepoint(CP_REPLACEMENT_CHARACTER);
         return;
       }
@@ -627,13 +582,13 @@ inline char* ReadBuffer(unsigned char* pBuffer) {
 
 unsigned char Stream::GetNextByte() const {
   if (m_nPrefetchedUsed >= m_nPrefetchedAvailable) {
-    std::streambuf* pBuf = m_input->rdbuf();
+    std::streambuf* pBuf = m_input.rdbuf();
 
     m_nPrefetchedAvailable = static_cast<std::size_t>(pBuf->sgetn(ReadBuffer(m_pPrefetched), YAML_PREFETCH_SIZE));
 
     m_nPrefetchedUsed = 0;
     if (!m_nPrefetchedAvailable) {
-      m_input->setstate(std::ios_base::eofbit);
+      m_input.setstate(std::ios_base::eofbit);
     }
 
     if (0 == m_nPrefetchedAvailable) {
@@ -655,7 +610,7 @@ void Stream::StreamInUtf32() const {
   bytes[1] = GetNextByte();
   bytes[2] = GetNextByte();
   bytes[3] = GetNextByte();
-  if (!m_input->good()) {
+  if (!m_input.good()) {
     return;
   }
 

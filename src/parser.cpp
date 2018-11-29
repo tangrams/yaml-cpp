@@ -14,7 +14,6 @@ class EventHandler;
 Parser::Parser() {}
 
 Parser::Parser(std::istream& in) { Load(in); }
-Parser::Parser(const char* in, size_t length) { Load(in, length); }
 
 Parser::~Parser() {}
 
@@ -24,11 +23,6 @@ Parser::operator bool() const {
 
 void Parser::Load(std::istream& in) {
   m_pScanner.reset(new Scanner(in));
-  m_pDirectives.reset(new Directives);
-}
-
-void Parser::Load(const char* in, size_t length) {
-  m_pScanner.reset(new Scanner(in, length));
   m_pDirectives.reset(new Directives);
 }
 

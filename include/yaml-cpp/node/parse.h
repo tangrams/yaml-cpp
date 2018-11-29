@@ -46,13 +46,6 @@ YAML_CPP_API Node LoadFile(const std::string& filename);
 YAML_CPP_API std::vector<Node> LoadAll(const std::string& input);
 
 /**
- * Loads the input string as a list of YAML documents.
- *
- * @throws {@link ParserException} if it is malformed.
- */
-YAML_CPP_API std::vector<Node> LoadAll(const char* input);
-
-/**
  * Loads the input stream as a list of YAML documents.
  *
  * @throws {@link ParserException} if it is malformed.

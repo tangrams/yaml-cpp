@@ -16,15 +16,6 @@ Scanner::Scanner(std::istream& in)
   InitTokens();
 }
 
-Scanner::Scanner(const char* in, size_t length)
-    : INPUT(in, length),
-      m_startedStream(false),
-      m_endedStream(false),
-      m_simpleKeyAllowed(false),
-      m_canBeJSONFlow(false) {
-  InitTokens();
-}
-
 Scanner::~Scanner() {}
 
 bool Scanner::empty() {
