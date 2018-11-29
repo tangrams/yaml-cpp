@@ -251,29 +251,39 @@ Stream::Stream(const char* input, size_t length)
       m_nPrefetchedAvailable(0),
       m_nPrefetchedUsed(0) {
 
-    int skip = 0;
-    std::stringstream ss(input);
+  if (length == 0) {
+    m_char = Stream::eof();
+    return;
+  }
+
+  int skip = 0;
+  m_charSet = utf8;
+
+  if (length > 0) {
+    std::string bom(input, input + std::min(size_t(5), length));
+    std::stringstream ss(bom);
     m_charSet = determineCharachterSet(ss, skip);
+  }
 
-    if (m_charSet == utf8) {
-        // Skip UTF-8 BOM
-        m_readaheadSize = length - skip;
-        m_buffer = input + skip;
+  if (m_charSet == utf8) {
+    // Skip UTF-8 BOM
+    m_readaheadSize = length - skip;
+    m_buffer = input + skip;
 
-    } else {
-        m_readaheadSize = 0;
+  } else {
+    m_readaheadSize = 0;
 
-        m_input = new std::stringstream(input + skip);
-        m_ownInput = true;
-    }
+    m_input = new std::stringstream(input + skip);
+    m_ownInput = true;
+  }
 
-    ReadAheadTo(0);
+  ReadAheadTo(0);
 
-    if (m_readaheadSize > 0) {
-        m_char = m_buffer[0];
-    } else {
-        m_char = Stream::eof();
-    }
+  if (m_readaheadSize > 0) {
+    m_char = m_buffer[0];
+  } else {
+    m_char = Stream::eof();
+  }
 }
 
 Stream::Stream(std::istream& input)
