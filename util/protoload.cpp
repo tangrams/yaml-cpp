@@ -4,6 +4,7 @@
 
 #include "yaml-cpp/yaml.h"
 #include "yaml-cpp/proto/protobuf.h"
+#include "yaml-cpp/emitterstyle.h"
 
 void parse(std::istream& input, std::ostream& output) {
     try {
@@ -16,9 +17,13 @@ void parse(std::istream& input, std::ostream& output) {
         }
 
         YAML::Node doc = YAML::Protobuf::Load(in);
+        YAML::Emitter out(output);
+        out.SetBoolFormat(YAML::TrueFalseBool);
+        // out.SetMapFormat(YAML::Flow);
+        out.SetSeqFormat(YAML::Flow);
+        out << doc;
 
-        output << doc << "\n";
-    
+        output << "\n";
     } catch (const YAML::Exception& e) {
         std::cerr << e.what() << "\n";
     }
