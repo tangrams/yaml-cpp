@@ -9,26 +9,13 @@
 void parse(std::istream& input, std::ostream& output) {
     try {
 
-        // Stop eating new lines in binary mode!!!
-        input.unsetf(std::ios::skipws);
+        YAML::proto::Node in;
+        if (!in.ParseFromIstream(&input)) {
+            std::cerr << "Parsing ProtoYAML failed" << "\n";
+            return;
+        }
 
-        // get its size:
-        std::streampos fileSize;
-
-        input.seekg(0, std::ios::end);
-        fileSize = input.tellg();
-        input.seekg(0, std::ios::beg);
-
-        // reserve capacity
-        std::vector<char> vec;
-        vec.reserve(fileSize);
-
-        // read the data:
-        vec.insert(vec.begin(),
-                   std::istream_iterator<char>(input),
-                   std::istream_iterator<char>());
-    
-        YAML::Node doc = YAML::Protobuf::Load(vec.data(), vec.size());
+        YAML::Node doc = YAML::Protobuf::GLoad(in);
         
         YAML::Emitter out(output);
         out.SetBoolFormat(YAML::TrueFalseBool);

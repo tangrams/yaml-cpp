@@ -16,6 +16,8 @@ class Node;
  */
 YAML_CPP_API Node Load(const std::string& input);
 
+YAML_CPP_API Node Load(const char* input, size_t length);
+
 /**
  * Loads the input string as a single YAML document.
  *

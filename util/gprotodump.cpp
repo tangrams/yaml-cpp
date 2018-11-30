@@ -9,9 +9,9 @@ void parse(std::istream& input, std::ostream& output) {
     try {
         YAML::Node doc = YAML::Load(input);
 
-        std::string out = YAML::Protobuf::Dump(doc);
-        output << out;
-        
+        YAML::proto::Node out = YAML::Protobuf::GDump(doc);
+        out.SerializeToOstream(&output);
+    
     } catch (const YAML::Exception& e) {
         std::cerr << e.what() << "\n";
     }

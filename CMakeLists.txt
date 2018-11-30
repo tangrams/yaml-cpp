@@ -24,8 +24,10 @@ set(YAML_CPP_VERSION "${YAML_CPP_VERSION_MAJOR}.${YAML_CPP_VERSION_MINOR}.${YAML
 option(YAML_CPP_BUILD_TESTS "Enable testing" ON)
 option(YAML_CPP_BUILD_TOOLS "Enable parse tools" ON)
 option(YAML_CPP_BUILD_CONTRIB "Enable contrib stuff in library" ON)
-option(YAML_CPP_BUILD_PROTOBUF "Enable protobuf stuff in library" ON)
 option(YAML_CPP_INSTALL "Enable generation of install target" ON)
+
+option(YAML_CPP_BUILD_PROTOBUF "Enable load/dump protobuf in library" ON)
+option(YAML_CPP_USE_GOOGLE_PROTOBUF "Also use google's protobuf stuff in library" OFF)
 
 ## Build options
 # --> General
@@ -88,8 +90,14 @@ endif()
 
 if(YAML_CPP_BUILD_PROTOBUF)
   set(protbuf_sources
-    src/proto/protobuf.cpp
-    src/proto/yaml.pb.cc)
+    src/proto/protobuf.cpp)
+
+  if(YAML_CPP_USE_GOOGLE_PROTOBUF)
+    set(protbuf_sources
+      ${protbuf_sources}
+      src/proto/yaml.pb.cc)
+  endif()
+
 endif()
 
 set(library_sources
@@ -275,21 +283,24 @@ set_target_properties(yaml-cpp PROPERTIES
   )
 
 if(YAML_CPP_BUILD_PROTOBUF)
-  find_package(Protobuf REQUIRED)
+  if(YAML_CPP_USE_GOOGLE_PROTOBUF)
+    find_package(Protobuf REQUIRED)
+    target_link_libraries(yaml-cpp
+      PUBLIC
+      ${Protobuf_LIBRARIES})
+    target_include_directories(yaml-cpp
+      PRIVATE
+      ${Protobuf_INCLUDE_DIRS})
+    target_compile_definitions(yaml-cpp
+      PUBLIC
+      USE_GOOGLE_PROTOBUF)
+  endif()
 
   target_include_directories(yaml-cpp
-    PRIVATE
-    ${Protobuf_INCLUDE_DIRS}
     PUBLIC
     ${YAML_CPP_SOURCE_DIR}/include/yaml-cpp/proto)
-
-  target_link_libraries(yaml-cpp
-    PUBLIC
-    ${Protobuf_LIBRARIES})
 endif()
 
-if(YAML_CPP_BUILD_PROTOBUF)
-endif()
 
 if(IPHONE)
   set_target_properties(yaml-cpp PROPERTIES
