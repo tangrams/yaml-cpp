@@ -58,6 +58,7 @@ struct ref_holder {
 
   bool operator==(const holder& ref) const { return m_ptr == ref.m_ptr; }
   bool operator!=(const holder& ref) const { return m_ptr != ref.m_ptr; }
+  operator bool() const { return m_ptr != nullptr; }
 
   const T* operator->() const { return m_ptr; }
   T* operator->() { return m_ptr; }
@@ -79,8 +80,6 @@ struct ref_holder {
     m_ptr = ptr;
   }
 
-  operator bool() const { return m_ptr != nullptr; }
-
  private:
   template<bool D = owned_region, typename std::enable_if<D, int>::type = 0>
   void release() {
@@ -97,7 +96,7 @@ struct ref_holder {
     }
   }
 
-  T* m_ptr;
+  T* m_ptr = nullptr;
 };
 
 struct ref_counted {

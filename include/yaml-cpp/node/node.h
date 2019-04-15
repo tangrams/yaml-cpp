@@ -141,7 +141,7 @@ class YAML_CPP_API Node {
 
   void ThrowOnInvalid() const;
   void ThrowInvalidNode() const;
-  bool isValid() const { return m_pMemory != nullptr; }
+  bool isValid() const { return bool(m_pMemory); }
 
   void mergeMemory(const Node& rhs) const;
   detail::node& node() {
