@@ -167,6 +167,10 @@ bool IsValidPlainScalar(const std::string& str, FlowType flowType,
   if (!str.empty() && *str.rbegin() == ' ') {
     return false;
   }
+
+  // String may not start with #
+  if (Exp::Comment::Matches(str)) { return false; }
+
   // then check until something is disallowed
   using namespace Exp;
   using Disallowed = Matcher <
